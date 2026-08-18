@@ -1,0 +1,15 @@
+---
+description: Konstitusi produk Batara Tertib — aturan bisnis yang tidak boleh dilanggar
+alwaysApply: true
+---
+
+# Konstitusi Batara Tertib
+
+- 1 plat lengkap = 1 isi sukses per hari kalender WIB, di pompa mana pun di jaringan.
+- Default 1 user : 1 SPBU. Admin boleh tambah user ke-2; keduanya jalan bersamaan, bukan saling tendang. Max 2 di V1.
+- Kendaraan didaftar sekali, data milik jaringan (semua SPBU melihat).
+- Pencarian boleh angka saja; daftar baru wajib plat lengkap satu kolom.
+- Foto kendaraan dan foto aduan opsional.
+- Aduan anonim, langsung tayang, hak jawab SPBU; SPBU tidak boleh hapus.
+- Jangan tambah menu, role, atau field tanpa mengubah `docs/ROADMAP.md` dulu.
+- Simple mengalahkan lengkap. Kalau ragu, potong fitur.

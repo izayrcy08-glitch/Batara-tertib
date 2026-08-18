@@ -1,0 +1,22 @@
+@import "tailwindcss";
+@import "@batara/tokens/fonts.css";
+@import "@batara/tokens/tokens.css";
+
+:root {
+  --color-background: var(--bt-struk);
+  --color-foreground: var(--bt-tinta);
+}
+
+html {
+  font-family: var(--bt-font-body);
+}
+
+body {
+  background-color: var(--bt-struk);
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(0,106,81,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(227,30,36,0.03) 0%, transparent 40%),
+    radial-gradient(circle at 50% 80%, rgba(0,94,184,0.03) 0%, transparent 45%);
+  color: var(--bt-tinta);
+  min-height: 100dvh;
+}

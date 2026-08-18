@@ -1,0 +1,36 @@
+@import "tailwindcss";
+@import "@batara/tokens/fonts.css";
+@import "@batara/tokens/tokens.css";
+@import "@batara/ui/globals.css";
+
+/* Pom selalu kulit malam */
+:root {
+  --color-background: var(--bt-aspal);
+  --color-foreground: var(--bt-struk);
+  --color-card: #242424;
+  --color-card-foreground: var(--bt-struk);
+  --color-popover: #242424;
+  --color-popover-foreground: var(--bt-struk);
+  --color-primary: var(--bt-led);
+  --color-primary-foreground: var(--bt-aspal);
+  --color-secondary: var(--bt-hijau);
+  --color-secondary-foreground: #ffffff;
+  --color-muted: #2e2e2e;
+  --color-muted-foreground: #a8a598;
+  --color-accent: #2e2e2e;
+  --color-accent-foreground: var(--bt-struk);
+  --color-destructive: var(--bt-merah);
+  --color-border: #3a3a3a;
+  --color-input: #3a3a3a;
+  --color-ring: var(--bt-led);
+}
+
+html {
+  font-family: var(--bt-font-body);
+}
+
+body {
+  background-color: var(--bt-aspal);
+  color: var(--bt-struk);
+  min-height: 100dvh;
+}

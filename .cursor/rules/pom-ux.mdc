@@ -1,0 +1,16 @@
+---
+description: UX khusus layar petugas /pom — satu alur, input besar, keputusan cepat
+globs: apps/pom/**
+alwaysApply: false
+---
+
+# UX Petugas `/pom`
+
+- Satu layar kerja: cari → daftar cepat atau riwayat → ISI atau TOLAK. Bukan sidebar 8 item.
+- Input plat sebesar papan harga (Barlow Condensed, `text-4xl`, tabular-nums).
+- Pratinjau pecahan di bawah input: `KH · 3455 · DGF`.
+- Dua keputusan besar: **ISI** (pertalite/LED) dan **TOLAK** (destructive), kontras tinggi, ramah ibu jari.
+- Jatah harian selalu fetch server — jangan cache / optimistic.
+- Riwayat seperti gulungan struk (Card krem di atas aspal gelap).
+- Target: kendaraan lama ~10 detik (cari + lihat + isi/tolak).
+- Mobile-first 390px; shadcn Button/Input, bukan komponen buatan sendiri.

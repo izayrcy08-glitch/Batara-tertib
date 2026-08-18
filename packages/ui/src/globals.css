@@ -1,0 +1,53 @@
+@import "tailwindcss";
+@import "@batara/tokens/fonts.css";
+@import "@batara/tokens/tokens.css";
+
+/*
+ * shadcn CSS variables — di-skin ke palet merah SPBU Pertamina.
+ * Kulit "warga" (siang, default) dan "pom" (malam).
+ */
+
+@theme inline {
+  --color-background: var(--bt-struk);
+  --color-foreground: var(--bt-tinta);
+  --color-card: #ffffff;
+  --color-card-foreground: var(--bt-tinta);
+  --color-popover: #ffffff;
+  --color-popover-foreground: var(--bt-tinta);
+  --color-primary: var(--bt-merah);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--bt-biru);
+  --color-secondary-foreground: #ffffff;
+  --color-muted: #ece8dd;
+  --color-muted-foreground: #6b6960;
+  --color-accent: #e8e3d6;
+  --color-accent-foreground: var(--bt-tinta);
+  --color-destructive: var(--bt-merah-tua);
+  --color-border: #d9d4c8;
+  --color-input: #d9d4c8;
+  --color-ring: var(--bt-merah);
+  --radius: 0.5rem;
+  --font-sans: var(--bt-font-body);
+}
+
+/* Kulit pom (malam) */
+.theme-pom {
+  --color-background: var(--bt-aspal);
+  --color-foreground: var(--bt-struk);
+  --color-card: #242424;
+  --color-card-foreground: var(--bt-struk);
+  --color-popover: #242424;
+  --color-popover-foreground: var(--bt-struk);
+  --color-primary: var(--bt-led);
+  --color-primary-foreground: var(--bt-aspal);
+  --color-secondary: var(--bt-hijau);
+  --color-secondary-foreground: #ffffff;
+  --color-muted: #2e2e2e;
+  --color-muted-foreground: #a8a598;
+  --color-accent: #2e2e2e;
+  --color-accent-foreground: var(--bt-struk);
+  --color-destructive: var(--bt-merah);
+  --color-border: #3a3a3a;
+  --color-input: #3a3a3a;
+  --color-ring: var(--bt-led);
+}

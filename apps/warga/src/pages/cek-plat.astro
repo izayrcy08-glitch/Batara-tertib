@@ -1,0 +1,61 @@
+---
+import Base from "../layouts/Base.astro"
+---
+
+<Base title="Cek Plat Kendaraan — Batara Tertib">
+  <a href="/" class="inline-flex items-center gap-1 text-sm text-[var(--bt-fascia)] mb-6 hover:underline">
+    ← Kembali
+  </a>
+
+  <h2
+    class="text-2xl font-bold mb-1"
+    style="font-family: var(--bt-font-display);"
+  >
+    Cek Plat Kendaraan
+  </h2>
+  <p class="text-sm text-[var(--bt-tinta)]/60 mb-6">
+    Lihat pengisian BBM 7 hari terakhir di seluruh SPBU yang terdaftar.
+  </p>
+
+  <!-- Input plat langsung -->
+  <div class="flex flex-col gap-2 mb-6">
+    <label
+      for="plat"
+      class="text-sm font-medium"
+    >
+      Nomor plat atau angka
+    </label>
+    <div class="flex gap-2">
+      <input
+        id="plat"
+        name="plat"
+        type="text"
+        placeholder="Contoh: 3455 atau KH 3455 DGF"
+        class="h-14 flex-1 rounded-lg border border-[var(--bt-tinta)]/15 bg-white px-4 text-xl tracking-widest text-center uppercase outline-none focus:border-[var(--bt-fascia)] focus:ring-2 focus:ring-[var(--bt-fascia)]/20 placeholder:text-[var(--bt-tinta)]/30 placeholder:text-base placeholder:tracking-normal"
+        style="font-family: var(--bt-font-display); font-variant-numeric: tabular-nums;"
+        disabled
+      />
+      <button
+        type="button"
+        disabled
+        class="h-14 px-5 rounded-lg font-bold text-sm tracking-wide uppercase text-[var(--bt-struk)] shrink-0 disabled:cursor-not-allowed transition-all"
+        style="background-color: var(--bt-fascia); font-family: var(--bt-font-display);"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Placeholder hasil -->
+  <div class="rounded-lg border border-dashed border-[var(--bt-tinta)]/15 bg-white/40 px-5 py-8 text-center">
+    <p
+      class="text-sm font-semibold text-[var(--bt-tinta)]/50 mb-1"
+      style="font-family: var(--bt-font-display);"
+    >
+      Hasil pencarian
+    </p>
+    <p class="text-xs text-[var(--bt-tinta)]/40">
+      Ketik plat di atas — riwayat pengisian akan tampil di sini. Belum terhubung ke server.
+    </p>
+  </div>
+</Base>

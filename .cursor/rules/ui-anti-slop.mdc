@@ -1,0 +1,25 @@
+---
+description: Larangan UI generik / AI slop — paksa estetik SPBU khas Batara Tertib
+alwaysApply: true
+---
+
+# Anti-slop UI
+
+## Dilarang
+
+- Ungu/violet default shadcn (zinc/slate tanpa override)
+- Inter, Geist, atau font SaaS sebagai identitas
+- Hero section 3 kartu ikon generik
+- Mesh gradient, glassmorphism, blur backdrop berlebihan
+- Ilustrasi orang tersenyum / vektor clip-art
+- Sidebar dashboard admin-style di layar pompa
+- Copy "empower", "seamless", "next-gen", "unlock potential"
+- `rounded-3xl` generik di semua elemen
+
+## Wajib
+
+- Palet `@batara/tokens`: fascia `#0F3D2E`, LED `#F0D35E`, aspal `#161814`, struk `#F3EFE4`
+- Huruf Barlow Condensed (plat, angka, wordmark) + Source Sans 3 (body)
+- shadcn = primitive teruji; skin lewat CSS variables token Batara
+- Copy bahasa Indonesia lapangan: "Cari plat", "Sudah isi hari ini", "Tolak"
+- Warga: siang, krem, papan; Pom: malam, aspal, LED

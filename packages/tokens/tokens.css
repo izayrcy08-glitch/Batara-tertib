@@ -1,0 +1,31 @@
+/*
+ * Batara Tertib — Design Tokens
+ * Sumber kebenaran warna dan tipografi. Jangan hardcode hex di file lain.
+ *
+ * Palet utama: merah SPBU Pertamina (#E31E24) sebagai warna identitas,
+ * dikombinasi hijau Pertamina, biru Pertamina, dan netral aspal/struk.
+ */
+
+:root {
+  /* --- Palet SPBU Pertamina --- */
+  --bt-merah: #C8102E;
+  --bt-merah-tua: #8B0A1E;
+  --bt-merah-muda: #E8384F;
+  --bt-hijau: #00A651;
+  --bt-biru: #005EB8;
+  --bt-aspal: #1A1A1A;
+  --bt-led: #F0D35E;
+  --bt-struk: #F5F1E8;
+  --bt-tinta: #1C1C14;
+
+  /* --- Alias semantik --- */
+  --bt-fascia: var(--bt-merah);
+  --bt-aksi: var(--bt-merah);
+  --bt-sukses: var(--bt-hijau);
+  --bt-info: var(--bt-biru);
+  --bt-tolak: var(--bt-merah-tua);
+
+  /* --- Tipografi --- */
+  --bt-font-display: "Barlow Condensed", ui-sans-serif, system-ui, sans-serif;
+  --bt-font-body: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+}

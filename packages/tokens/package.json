@@ -1,0 +1,14 @@
+{
+  "name": "@batara/tokens",
+  "version": "0.0.1",
+  "private": true,
+  "main": "tokens.css",
+  "files": [
+    "tokens.css",
+    "fonts.css"
+  ],
+  "dependencies": {
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "@fontsource/source-sans-3": "^5.3.0"
+  }
+}

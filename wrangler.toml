@@ -7,4 +7,5 @@ compatibility_date = "2026-08-21"
 
 [assets]
 directory = "./apps/warga/dist"
-# Situs warga multi-halaman; SPA /pom diarahkan lewat public/_redirects
+# Warga multi-halaman + /pom sebagai file statis (tanpa _redirects —
+# aturan /pom/* → index.html ditolak Workers: infinite loop).

@@ -1,0 +1,22 @@
+---
+import Base from "../layouts/Base.astro"
+import { LaporanLiter } from "../components/LaporanLiter"
+---
+
+<Base title="Cek Pengeluaran BBM dari SPBU — Batara Tertib">
+  <a href="/" class="inline-flex items-center gap-1 text-sm text-[var(--bt-fascia)] mb-6 hover:underline">
+    ← Kembali
+  </a>
+
+  <h2
+    class="text-2xl font-bold mb-1"
+    style="font-family: var(--bt-font-display);"
+  >
+    Cek Pengeluaran BBM dari SPBU
+  </h2>
+  <p class="text-sm text-[var(--bt-tinta)]/60 mb-6">
+    Total penyaluran per SPBU. Bukan harga, bukan plat kendaraan.
+  </p>
+
+  <LaporanLiter client:load />
+</Base>

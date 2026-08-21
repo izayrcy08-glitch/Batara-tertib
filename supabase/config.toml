@@ -1,0 +1,6 @@
+# Deploy functions ke cloud. Lokal tanpa Docker.
+
+project_id = "vcktcdofiyvdsexpvtjj"
+
+[functions.admin-users]
+verify_jwt = true

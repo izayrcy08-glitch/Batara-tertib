@@ -6,6 +6,7 @@ export default defineConfig({
   output: "static",
   integrations: [react()],
   vite: {
+    envDir: "../../",
     plugins: [tailwindcss()],
   },
 })

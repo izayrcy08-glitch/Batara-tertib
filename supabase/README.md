@@ -1,30 +1,47 @@
 # Supabase — Batara Tertib
 
-Belum ada project cloud di V0. Folder ini disiapkan untuk migrasi V1.
+Project cloud: `https://vcktcdofiyvdsexpvtjj.supabase.co` (tanpa Docker).
 
-## Tabel inti (rencana V1)
+## Migrasi
+
+Jalankan berurutan di **Dashboard > SQL Editor**:
+
+1. `supabase/migrations/20260818_v1_init.sql` — sudah
+2. `supabase/migrations/20260818_v1_admin.sql` — sudah (Dashboard 2026-08-18: `Success. No rows returned` = DDL, bukan SELECT kosong)
+3. `supabase/migrations/20260821_fix_rekap_bbm_cast.sql` — sudah (2026-08-21; cast `produk_bbm` di filter RPC)
+
+Pesan `Success. No rows returned` normal: script hanya `ALTER`/`CREATE`, tidak ada `SELECT`.
+
+## Edge Function `admin-users`
+
+Kelola petugas (tambah / edit / nonaktif / hapus / reset sandi). Service role hanya di sini, bukan di frontend.
+
+**Status:** deployed ke `vcktcdofiyvdsexpvtjj` (2026-08-21).
+
+```sh
+npx supabase login
+npx supabase link --project-ref vcktcdofiyvdsexpvtjj
+npx supabase functions deploy admin-users --use-api
+```
+
+## Seed user uji
+
+Butuh `SUPABASE_SERVICE_ROLE_KEY` di `.env` (jangan di-commit):
+
+```sh
+node supabase/seed-users.mjs
+```
+
+Sandi default: `Batara123!`
+
+## Tabel inti V1
 
 | Tabel | Fungsi |
 |-------|--------|
-| `spbu` | Nama, aktif. Awal: 5 pompa di Muara Teweh. |
-| `user` | Admin atau petugas, terikat `spbu_id` jika petugas. |
-| `kendaraan` | `plat_lengkap` unik, `angka_plat`, `foto_kendaraan` opsional. |
-| `transaksi` | Plat, matching STNK, liter, produk, waktu, spbu, user_id. |
-| `tolakan` | Plat, alasan (stnk / isi_ulang_hari_ini), waktu, spbu, user_id. |
-| `aduan` | Kode lacak, spbu, kategori, isi, foto opsional, status. |
-| `hak_jawab` | Jawaban SPBU di utas aduan. |
-| `stok_status` | Opsional, stok BBM per pompa. |
+| `spbu` | Nama, aktif |
+| `profiles` | Admin/petugas, `spbu_id`, `email`, `aktif` |
+| `kendaraan` | `plat_lengkap` unik, `angka_plat`, `foto_url` opsional |
+| `transaksi` | Liter, produk, waktu, SPBU, user |
+| `tolakan` | Alasan, waktu, SPBU, user |
 
-## Aturan bisnis di DB
-
-- 1 plat lengkap = 1 isi sukses per hari kalender WIB, di pompa mana pun di jaringan.
-- Kendaraan didaftar sekali, milik jaringan (semua SPBU melihat).
-- Aduan tidak dihapus oleh SPBU, hanya disembunyikan admin.
-
-## Cara pakai nanti
-
-```sh
-npx supabase init      # sudah dilakukan
-npx supabase start     # nyalakan lokal (butuh Docker)
-# Buat migrasi: supabase/migrations/YYYYMMDDHHMMSS_*.sql
-```
+RPC `rekap_bbm` — total liter Pertalite/Pertamax per SPBU (boleh dipanggil anon; tanpa plat).

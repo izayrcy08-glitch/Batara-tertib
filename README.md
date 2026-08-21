@@ -7,7 +7,7 @@ Pengawasan distribusi BBM 5 SPBU di Kabupaten Barito Utara, Muara Teweh.
 - **Warga:** Astro static (SEO, HTML ringan)
 - **Petugas:** Vite React PWA di `/pom`
 - **Backend:** Supabase (Auth, Postgres, Storage)
-- **Hosting:** Cloudflare Pages
+- **Hosting:** Cloudflare Workers + static assets
 
 ## Cara menjalankan
 
@@ -25,19 +25,20 @@ npm run dev:pom
 
 ```powershell
 npm run build
+# = warga + pom digabung ke apps/warga/dist (termasuk apps/warga/dist/pom)
 ```
 
-## Cloudflare Pages
+## Cloudflare Workers (Git Builds)
 
-Ini harus **Pages** (URL `*.pages.dev`), bukan Workers (`*.workers.dev`).
+Proyek baru memakai **Workers + static assets** (bukan alur Pages lama). Config: [`wrangler.toml`](wrangler.toml) → `assets.directory = ./apps/warga/dist`.
 
-| Setting | Nilai |
-|---------|--------|
-| Root directory | *(kosong — root monorepo)* |
-| Build command | `npm run build` atau `npm run build:pages` |
-| Build output directory | `apps/warga/dist` |
-| Deploy command | **kosong** (paling benar) **atau** `npm run deploy:pages` |
-| Node version | `20` (file `.nvmrc` atau env `NODE_VERSION=20`) |
+| Setting di dashboard | Nilai |
+|----------------------|--------|
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy` |
+| Version command | `npx wrangler versions upload` |
+| Root directory | `/` (root monorepo) |
+| Node | `20` (`.nvmrc` / env `NODE_VERSION=20`) |
 
 Variabel lingkungan (Production + Preview):
 
@@ -45,9 +46,14 @@ Variabel lingkungan (Production + Preview):
 - `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY` — warga
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — pom
 
-`build:pages` membangun warga + pom, lalu menyalin `apps/pom/dist` ke `apps/warga/dist/pom`.
+URL gratis: `https://batara-tertib.<akun>.workers.dev`. Subdomain akun tidak bisa dihilangkan; pakai **custom domain** untuk URL bersih.
 
-Jangan isi **Deploy command** dengan `npx wrangler deploy` — itu mode Workers dan menyebabkan error monorepo + URL `*.izayrcy08.workers.dev`.
+Deploy manual:
+
+```powershell
+npm run build
+npm run deploy
+```
 
 ## Struktur
 
@@ -58,7 +64,8 @@ packages/tokens/  CSS variables + font (Barlow Condensed, Source Sans 3)
 packages/ui/      shadcn/ui components (base-nova)
 supabase/         Konfigurasi Supabase
 docs/             DESIGN, ROADMAP, SECURITY-CHECKLIST
-scripts/          merge-pages.mjs (Cloudflare)
+scripts/          merge-pages.mjs (gabung output ke dist)
+wrangler.toml     Workers static assets
 ```
 
 ## SPBU

@@ -15,6 +15,6 @@
     "build:warga": "npm run build -w apps/warga",
     "build": "npm run build:pages",
     "build:pages": "npm run build:warga && npm run build:pom && node scripts/merge-pages.mjs",
-    "deploy:pages": "npx wrangler pages deploy apps/warga/dist --project-name=batara-tertib"
+    "deploy": "npx wrangler deploy"
   }
 }

@@ -1,8 +1,10 @@
-# Cloudflare Pages — static site (warga + /pom)
-# Deploy: npx wrangler pages deploy apps/warga/dist --project-name=batara-tertib
-# Atau connect Git di Dashboard dengan build: npm run build:pages, output: apps/warga/dist
-# Jangan pakai `wrangler deploy` (itu Workers).
+# Cloudflare Workers + static assets (model terkini)
+# Build: npm run build  →  apps/warga/dist (termasuk /pom)
+# Deploy: npx wrangler deploy
 
 name = "batara-tertib"
 compatibility_date = "2026-08-21"
-pages_build_output_dir = "apps/warga/dist"
+
+[assets]
+directory = "./apps/warga/dist"
+# Situs warga multi-halaman; SPA /pom diarahkan lewat public/_redirects

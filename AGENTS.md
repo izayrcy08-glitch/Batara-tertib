@@ -12,7 +12,8 @@ Sebelum ubah kode, baca dulu:
 - **Komponen:** shadcn/ui (`packages/ui`) — jangan buat Button/Input/Card sendiri
 - **Token:** `packages/tokens` — jangan hardcode hex di file lain
 - **Backend:** Supabase (Auth, Postgres, Storage)
-- **Hosting:** Cloudflare Pages (gratis awal → domain + Supabase Pro nanti)
+- **Hosting:** Cloudflare Workers + static assets (gratis awal → custom domain + Supabase Pro nanti)
+
 - **Bukan:** Next.js, Laravel, shared hosting PHP
 
 ## Aturan

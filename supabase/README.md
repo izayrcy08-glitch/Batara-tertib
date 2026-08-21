@@ -9,7 +9,7 @@ Jalankan berurutan di **Dashboard > SQL Editor**:
 1. `supabase/migrations/20260818_v1_init.sql` — sudah
 2. `supabase/migrations/20260818_v1_admin.sql` — sudah (Dashboard 2026-08-18: `Success. No rows returned` = DDL, bukan SELECT kosong)
 3. `supabase/migrations/20260821_fix_rekap_bbm_cast.sql` — sudah (2026-08-21; cast `produk_bbm` di filter RPC)
-4. `supabase/migrations/20260821_v2_aduan.sql` — **jalankan** (tabel `aduan`, RPC `kirim_aduan`, bucket Storage `aduan`/`kendaraan` WebP)
+4. `supabase/migrations/20260821_v2_aduan.sql` — sudah (Dashboard 2026-08-21: `Success. No rows returned`)
 
 Pesan `Success. No rows returned` normal: script hanya `ALTER`/`CREATE`, tidak ada `SELECT`.
 

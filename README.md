@@ -29,19 +29,25 @@ npm run build
 
 ## Cloudflare Pages
 
+Ini harus **Pages** (URL `*.pages.dev`), bukan Workers (`*.workers.dev`).
+
 | Setting | Nilai |
 |---------|--------|
 | Root directory | *(kosong — root monorepo)* |
 | Build command | `npm run build:pages` |
 | Build output directory | `apps/warga/dist` |
-| Node version | `20` (env `NODE_VERSION=20`) |
+| Deploy command | *(kosong — jangan `wrangler deploy`)* |
+| Node version | `20` (file `.nvmrc` atau env `NODE_VERSION=20`) |
 
 Variabel lingkungan (Production + Preview):
 
+- `NODE_VERSION` = `20`
 - `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY` — warga
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — pom
 
 `build:pages` membangun warga + pom, lalu menyalin `apps/pom/dist` ke `apps/warga/dist/pom`.
+
+Jangan isi **Deploy command** dengan `npx wrangler deploy` — itu mode Workers dan menyebabkan error monorepo + URL `*.izayrcy08.workers.dev`.
 
 ## Struktur
 

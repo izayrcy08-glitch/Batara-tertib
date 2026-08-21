@@ -25,7 +25,7 @@
 - [x] Riwayat pengisian 7 hari (termasuk pompa lain)
 - [x] Tolak isi ulang hari yang sama (1 plat = 1 isi sukses/hari WIB, semua pompa)
 - [x] Catat liter + produk BBM
-- [ ] Hak jawab aduan di pompa sendiri — ditunda V2
+- [x] Hak jawab aduan di pompa sendiri — slice V2 (satu balasan)
 
 ## V1 — `/admin`
 
@@ -51,11 +51,16 @@ Fix cast enum: `supabase/migrations/20260821_fix_rekap_bbm_cast.sql` diterapkan 
 
 ## V2 — Situs warga
 
+### Slice aktif (2026-08-21)
+
+- [x] Foto WebP: sumber max 5 MB → WebP sisi panjang max 1280 px, quality 0.72, hard cap hasil 400 KB (kendaraan + aduan)
+- [x] Aduan anonim: SPBU, judul, isi, foto opsional, kode lacak (tampil setelah kirim)
+- [x] Jawab SPBU di pompa (satu balasan, bukan utas panjang)
+- [x] Purge H+7 setelah ditanggapi: hapus baris aduan + objek Storage (foto kendaraan tetap)
 - [ ] Halaman per SPBU (SEO)
-- [ ] Aduan anonim + foto opsional + kode lacak
-- [ ] Hak jawab SPBU di utas (utama: petugas pompa terkait)
 - [ ] Cek plat 7 hari
 - [ ] Cari aduan
+- [ ] Sembunyikan aduan melanggar (admin)
 
 ## V3 — PWA + stok
 
@@ -68,6 +73,6 @@ ANPR, MyPertamina, Samsat, native store, keuangan, CMS, peta GIS, kuota liter pe
 
 ---
 
-## Sisa V1
+## Catatan
 
-V1 inti selesai (petugas + admin + laporan warga). Belum commit sampai diminta. Aduan tetap V2 — jangan tambah menu.
+V1 inti selesai (`525adbc` di `origin/master`). Hosting ditunda sampai fitur dirasa pas. Slice V2 aduan + WebP dikerjakan tanpa menu baru di luar yang sudah di ROADMAP.

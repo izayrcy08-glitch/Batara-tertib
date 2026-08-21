@@ -19,11 +19,11 @@ import Base from "../layouts/Base.astro"
         class="text-2xl sm:text-3xl font-bold leading-tight text-white mb-3"
         style="font-family: var(--bt-font-display);"
       >
-        Kirim aduan ke SPBU, cek riwayat isi BBM dari nomor plat,<br />atau lihat berapa liter BBM keluar dari tiap SPBU.
+        Cek berapa liter BBM keluar dari tiap SPBU, atau kirim aduan anonim. Cek plat segera hadir.
       </h2>
       <p class="text-sm text-white/75 leading-relaxed max-w-lg">
-        Tanpa akun, tanpa unduh aplikasi. Pilih layanan di bawah, isi form singkat — selesai.
-        Berlaku di lima SPBU Muara Teweh: PERUSDA, Jl. Pendreh, Jl. Pramuka, Km 2 Jl. Brigjen Katamso, dan Jingah.
+        Tanpa akun, tanpa unduh aplikasi. Laporan liter dan aduan sudah bisa dipakai.
+        Berlaku di lima SPBU Muara Teweh: PERUSDA, Jl. Pendreh, Jl. Pramuka, Lanjas, dan Jingah.
       </p>
       <div
         class="mt-5 h-0.5 w-16 rounded-full"
@@ -33,26 +33,8 @@ import Base from "../layouts/Base.astro"
     </div>
   </section>
 
-  <!-- Aksi warga -->
+  <!-- Aksi warga — laporan hidup dulu -->
   <section class="flex flex-col gap-4">
-    <!-- Kirim Aduan — aspal + aksen merah -->
-    <a
-      href="/aduan"
-      class="group flex items-center gap-4 rounded-xl px-5 py-5 text-white shadow-lg active:scale-[0.98] transition-all cursor-pointer hover:shadow-xl"
-      style="background: var(--bt-aspal);"
-    >
-      <span class="shrink-0 inline-flex items-center justify-center size-12 rounded-xl" style="background-color: var(--bt-merah);">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      </span>
-      <div class="flex-1 min-w-0">
-        <p class="text-lg font-bold tracking-wide" style="font-family: var(--bt-font-display);">
-          Kirim Aduan
-        </p>
-        <p class="text-xs text-white/55 mt-0.5">Laporan anonim ke SPBU</p>
-      </div>
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-40 group-hover:translate-x-1 group-hover:opacity-80 transition-all"><path d="m9 18 6-6-6-6"/></svg>
-    </a>
-
     <!-- Liter BBM — fascia + aksen LED -->
     <a
       href="/laporan"
@@ -71,7 +53,25 @@ import Base from "../layouts/Base.astro"
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-40 group-hover:translate-x-1 group-hover:opacity-80 transition-all"><path d="m9 18 6-6-6-6"/></svg>
     </a>
 
-    <!-- Cek Plat — aspal + aksen biru -->
+    <!-- Kirim Aduan -->
+    <a
+      href="/aduan"
+      class="group flex items-center gap-4 rounded-xl px-5 py-5 text-white shadow-lg active:scale-[0.98] transition-all cursor-pointer hover:shadow-xl"
+      style="background: var(--bt-aspal);"
+    >
+      <span class="shrink-0 inline-flex items-center justify-center size-12 rounded-xl" style="background-color: var(--bt-merah);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </span>
+      <div class="flex-1 min-w-0">
+        <p class="text-lg font-bold tracking-wide" style="font-family: var(--bt-font-display);">
+          Kirim Aduan
+        </p>
+        <p class="text-xs text-white/55 mt-0.5">Laporan anonim ke SPBU</p>
+      </div>
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-40 group-hover:translate-x-1 group-hover:opacity-80 transition-all"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+
+    <!-- Cek Plat — stub V2 -->
     <a
       href="/cek-plat"
       class="group flex items-center gap-4 rounded-xl px-5 py-5 text-white shadow-lg active:scale-[0.98] transition-all cursor-pointer hover:shadow-xl"
@@ -84,7 +84,7 @@ import Base from "../layouts/Base.astro"
         <p class="text-lg font-bold tracking-wide" style="font-family: var(--bt-font-display);">
           Cek Plat Kendaraan
         </p>
-        <p class="text-xs text-white/55 mt-0.5">Riwayat pengisian 7 hari</p>
+        <p class="text-xs text-white/55 mt-0.5">Segera hadir · riwayat pengisian 7 hari</p>
       </div>
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-40 group-hover:translate-x-1 group-hover:opacity-80 transition-all"><path d="m9 18 6-6-6-6"/></svg>
     </a>

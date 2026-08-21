@@ -4,3 +4,6 @@ project_id = "vcktcdofiyvdsexpvtjj"
 
 [functions.admin-users]
 verify_jwt = true
+
+[functions.purge-aduan]
+verify_jwt = false

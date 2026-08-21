@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Fuel, ShieldX, LogOut, Search, Loader2, Plus } from "lucide-react"
+import { Fuel, ShieldX, LogOut, Search, Loader2, Plus, MessageSquareWarning } from "lucide-react"
 import { Button } from "@batara/ui/components/ui/button"
 import { Input } from "@batara/ui/components/ui/input"
 import { Label } from "@batara/ui/components/ui/label"
@@ -9,7 +9,10 @@ import { Toaster, toast } from "sonner"
 import { useAuth } from "./hooks/useAuth"
 import { Login } from "./pages/Login"
 import { AdminPanel } from "./pages/Admin"
+import { AduanPom } from "./components/AduanPom"
 import { supabase } from "./lib/supabase"
+import { labelAlasanTolak } from "./lib/tolak"
+import { compressImageToWebp, CompressImageError } from "@batara/ui/lib/compress-image"
 
 type Kendaraan = {
   id: string
@@ -36,20 +39,6 @@ type ResultSummary = {
   lastText: string
   lastTone: "ok" | "warn"
   spbuNama: string
-}
-
-function labelAlasanTolak(alasan?: string | null, catatan?: string | null): string {
-  const map: Record<string, string> = {
-    isi_ulang_hari_ini: "Sudah isi hari ini",
-    stnk_tidak_cocok: "STNK tidak cocok",
-    tidak_ada_plat: "Tidak ada plat",
-    tidak_ada_stnk: "Tidak ada STNK",
-    lainnya: "Lainnya",
-  }
-  if (catatan && map[catatan]) return map[catatan]
-  if (catatan && catatan.trim()) return catatan.trim()
-  if (alasan && map[alasan]) return map[alasan]
-  return "Tolak"
 }
 
 function wibDateKey(iso: string): string {
@@ -152,6 +141,7 @@ function Dashboard({ profile, userId, onSignOut }: {
   const [fotoKendaraan, setFotoKendaraan] = useState<File | null>(null)
   const [daftarLoading, setDaftarLoading] = useState(false)
   const [cameraOpen, setCameraOpen] = useState(false)
+  const [showAduan, setShowAduan] = useState(false)
   const galleryInputRef = useRef<HTMLInputElement | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -342,7 +332,7 @@ function Dashboard({ profile, userId, onSignOut }: {
     }
 
     if (error) {
-      toast.error("Gagal mencari: " + error.message)
+      toast.error("Gagal mencari. Coba lagi.")
       setResultSummary({})
     } else {
       let list = data ?? []
@@ -495,6 +485,7 @@ function Dashboard({ profile, userId, onSignOut }: {
   async function handleSelect(k: Kendaraan) {
     setSelected(k)
     setShowAksiPanel(true)
+    setLiter("")
     await loadRiwayat(k)
   }
 
@@ -523,7 +514,7 @@ function Dashboard({ profile, userId, onSignOut }: {
       if (error.message.includes("idx_satu_isi_per_hari")) {
         toast.error("Sudah isi hari ini! 1 plat = 1 isi per hari.")
       } else {
-        toast.error("Gagal: " + error.message)
+        toast.error("Gagal menyimpan. Coba lagi.")
       }
     } else {
       toast.success(`ISI ${literNum} L ${produk} berhasil`)
@@ -553,7 +544,7 @@ function Dashboard({ profile, userId, onSignOut }: {
     setTolakLoading(false)
 
     if (error) {
-      toast.error("Gagal: " + error.message)
+      toast.error("Gagal mencatat tolakan. Coba lagi.")
     } else {
       toast.success("Tolakan dicatat")
       if (profile.spbu_id) await loadRiwayatSpbuHariIni(profile.spbu_id)
@@ -586,18 +577,23 @@ function Dashboard({ profile, userId, onSignOut }: {
     let fotoUrl: string | null = null
 
     if (fotoKendaraan) {
-      const safeName = fotoKendaraan.name.replace(/[^a-zA-Z0-9._-]/g, "_")
-      const filePath = `kendaraan/${Date.now()}-${safeName}`
-      const { error: uploadError } = await supabase.storage
-        .from("kendaraan")
-        .upload(filePath, fotoKendaraan, { upsert: false })
+      try {
+        const { blob, fileName } = await compressImageToWebp(fotoKendaraan)
+        const filePath = `kendaraan/${fileName}`
+        const { error: uploadError } = await supabase.storage
+          .from("kendaraan")
+          .upload(filePath, blob, { upsert: false, contentType: "image/webp" })
 
-      if (!uploadError) {
-        const { data: publicData } = supabase.storage.from("kendaraan").getPublicUrl(filePath)
-        fotoUrl = publicData.publicUrl
-      } else {
-        // Optional photo: continue even when upload fails.
-        toast("Foto tidak tersimpan, data kendaraan tetap didaftarkan.")
+        if (!uploadError) {
+          const { data: publicData } = supabase.storage.from("kendaraan").getPublicUrl(filePath)
+          fotoUrl = publicData.publicUrl
+        } else {
+          toast("Foto tidak tersimpan, data kendaraan tetap didaftarkan.")
+        }
+      } catch (err) {
+        const msg =
+          err instanceof CompressImageError ? err.message : "Foto tidak tersimpan, data kendaraan tetap didaftarkan."
+        toast(msg)
       }
     }
 
@@ -612,7 +608,7 @@ function Dashboard({ profile, userId, onSignOut }: {
       if (error.message.includes("duplicate")) {
         toast.error("Plat sudah terdaftar")
       } else {
-        toast.error("Gagal: " + error.message)
+        toast.error("Gagal mendaftar. Coba lagi.")
       }
     } else {
       toast.success("Kendaraan terdaftar: " + normalized)
@@ -644,6 +640,20 @@ function Dashboard({ profile, userId, onSignOut }: {
           <p className="text-xs text-white/70">{spbuNama || profile.nama}</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowAduan((v) => !v)}
+            className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg"
+            style={{
+              background: showAduan ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.12)",
+              color: "white",
+              fontFamily: "var(--bt-font-display)",
+            }}
+            title="Aduan SPBU"
+          >
+            <MessageSquareWarning className="size-3.5" />
+            Aduan
+          </button>
           <span
             className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
             style={{ background: "rgba(255,255,255,0.15)", color: "var(--bt-led)" }}
@@ -664,6 +674,10 @@ function Dashboard({ profile, userId, onSignOut }: {
 
       {/* Main */}
       <main className="flex-1 flex flex-col gap-5 px-4 py-6 max-w-md mx-auto w-full">
+        {showAduan && profile.spbu_id ? (
+          <AduanPom spbuId={profile.spbu_id} userId={userId} onClose={() => setShowAduan(false)} />
+        ) : null}
+
         {/* Search */}
         <section className="flex flex-col gap-2">
           <label
@@ -882,8 +896,9 @@ function Dashboard({ profile, userId, onSignOut }: {
                   inputMode="numeric"
                   placeholder="20"
                   value={liter}
+                  disabled={resultSummary[selected.id]?.statusTone === "warn"}
                   onChange={(e) => setLiter(e.target.value.replace(/[^\d]/g, ""))}
-                  className="h-14 text-2xl tracking-widest text-center bg-transparent border-2 placeholder:opacity-30"
+                  className="h-14 text-2xl tracking-widest text-center bg-transparent border-2 placeholder:opacity-30 disabled:opacity-40"
                   style={{
                     fontFamily: "var(--bt-font-display)",
                     fontVariantNumeric: "tabular-nums",
@@ -903,8 +918,9 @@ function Dashboard({ profile, userId, onSignOut }: {
                 <select
                   id="produk"
                   value={produk}
+                  disabled={resultSummary[selected.id]?.statusTone === "warn"}
                   onChange={(e) => setProduk(e.target.value)}
-                  className="h-14 px-3 rounded-md border-2 bg-transparent text-base"
+                  className="h-14 px-3 rounded-md border-2 bg-transparent text-base disabled:opacity-40"
                   style={{
                     fontFamily: "var(--bt-font-display)",
                     borderColor: "color-mix(in srgb, var(--bt-led) 40%, transparent)",
@@ -923,8 +939,8 @@ function Dashboard({ profile, userId, onSignOut }: {
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => handleIsi(selected.id)}
-                disabled={isiLoading}
-                className="relative h-20 rounded-2xl text-white font-black text-2xl uppercase tracking-wider flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-70"
+                disabled={isiLoading || resultSummary[selected.id]?.statusTone === "warn"}
+                className="relative h-20 rounded-2xl text-white font-black text-2xl uppercase tracking-wider flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
                 style={{
                   fontFamily: "var(--bt-font-display)",
                   background: "linear-gradient(180deg, #00C853 0%, #00873A 100%)",

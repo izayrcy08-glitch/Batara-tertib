@@ -1,4 +1,5 @@
 import { supabase } from "./supabase"
+import { labelAlasanTolak } from "./tolak"
 
 export type ProdukFilter = "semua" | "Pertalite" | "Pertamax"
 export type Spbu = { id: string; nama: string; aktif: boolean }
@@ -214,7 +215,7 @@ export async function loadRiwayat(opts: {
       spbu_nama: nestedNama(t.spbu),
       liter: null,
       produk: null,
-      catatan: t.catatan || t.alasan,
+      catatan: labelAlasanTolak(t.alasan, t.catatan),
       created_at: t.created_at,
     })),
   ]

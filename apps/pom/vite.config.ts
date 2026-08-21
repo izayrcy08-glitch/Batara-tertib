@@ -4,7 +4,8 @@ import tailwindcss from "@tailwindcss/vite"
 import { VitePWA } from "vite-plugin-pwa"
 import path from "path"
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  base: mode === "production" ? "/pom/" : "/",
   envDir: "../../",
   plugins: [
     react(),
@@ -19,10 +20,19 @@ export default defineConfig({
         theme_color: "#0F3D2E",
         background_color: "#161814",
         display: "standalone",
-        start_url: "/",
+        start_url: mode === "production" ? "/pom/" : "/",
+        scope: mode === "production" ? "/pom/" : "/",
         icons: [
-          { src: "/pwa-192.png", sizes: "192x192", type: "image/png" },
-          { src: "/pwa-512.png", sizes: "512x512", type: "image/png" },
+          {
+            src: mode === "production" ? "/pom/pwa-192.png" : "/pwa-192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: mode === "production" ? "/pom/pwa-512.png" : "/pwa-512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
         ],
       },
     }),
@@ -34,4 +44,4 @@ export default defineConfig({
       "@batara/tokens": path.resolve(__dirname, "../../packages/tokens"),
     },
   },
-})
+}))

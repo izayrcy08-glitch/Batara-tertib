@@ -34,9 +34,9 @@ Ini harus **Pages** (URL `*.pages.dev`), bukan Workers (`*.workers.dev`).
 | Setting | Nilai |
 |---------|--------|
 | Root directory | *(kosong — root monorepo)* |
-| Build command | `npm run build:pages` |
+| Build command | `npm run build` atau `npm run build:pages` |
 | Build output directory | `apps/warga/dist` |
-| Deploy command | *(kosong — jangan `wrangler deploy`)* |
+| Deploy command | **kosong** (paling benar) **atau** `npm run deploy:pages` |
 | Node version | `20` (file `.nvmrc` atau env `NODE_VERSION=20`) |
 
 Variabel lingkungan (Production + Preview):

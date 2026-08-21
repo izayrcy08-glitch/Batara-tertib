@@ -46,7 +46,13 @@ Variabel lingkungan (Production + Preview):
 - `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY` — warga
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — pom
 
-URL gratis: `https://batara-tertib.<akun>.workers.dev`. Subdomain akun tidak bisa dihilangkan; pakai **custom domain** untuk URL bersih.
+URL production (subdomain akun Cloudflare, diganti 2026-08-21):
+
+`https://batara-tertib.bataratertib.workers.dev`
+
+Preview: `https://*-batara-tertib.bataratertib.workers.dev`
+
+Subdomain akun lama `izayrcy08.workers.dev` sudah tidak dipakai. Untuk URL tanpa bagian tengah, pasang **custom domain**.
 
 Deploy manual:
 

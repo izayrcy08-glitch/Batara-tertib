@@ -75,4 +75,6 @@ ANPR, MyPertamina, Samsat, native store, keuangan, CMS, peta GIS, kuota liter pe
 
 ## Catatan
 
-V1 inti selesai (`525adbc` di `origin/master`). Hosting ditunda sampai fitur dirasa pas. Slice V2 aduan + WebP dikerjakan tanpa menu baru di luar yang sudah di ROADMAP.
+V1 inti selesai (`525adbc` di `origin/master`). Slice V2 aduan + WebP dikerjakan tanpa menu baru di luar yang sudah di ROADMAP.
+
+**Hosting (2026-08-21):** Cloudflare Workers + static assets. Deploy Git: `npm run build` → `npx wrangler deploy`. Subdomain akun diganti `izayrcy08` → `bataratertib`. Production: `https://batara-tertib.bataratertib.workers.dev` (+ `/pom/`). Edge Function `purge-aduan` masih perlu deploy dengan token akun Batara.

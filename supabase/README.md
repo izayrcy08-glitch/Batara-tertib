@@ -10,6 +10,7 @@ Jalankan berurutan di **Dashboard > SQL Editor**:
 2. `supabase/migrations/20260818_v1_admin.sql` — sudah (Dashboard 2026-08-18: `Success. No rows returned` = DDL, bukan SELECT kosong)
 3. `supabase/migrations/20260821_fix_rekap_bbm_cast.sql` — sudah (2026-08-21; cast `produk_bbm` di filter RPC)
 4. `supabase/migrations/20260821_v2_aduan.sql` — sudah (Dashboard 2026-08-21: `Success. No rows returned`)
+5. `supabase/migrations/20260823_purge_cron.sql` — sudah (2026-08-23; jadwal `purge-aduan-daily`)
 
 Pesan `Success. No rows returned` normal: script hanya `ALTER`/`CREATE`, tidak ada `SELECT`.
 
@@ -33,7 +34,11 @@ npx supabase functions deploy admin-users --use-api
 
 ## Edge Function `purge-aduan`
 
-Hapus aduan yang sudah dijawab lebih dari 7 hari (+ objek Storage). Auth: `Authorization: Bearer <SERVICE_ROLE_KEY>`.
+Hapus aduan yang sudah dijawab lebih dari 7 hari (+ objek Storage). Auth: Bearer JWT `service_role` project ini (atau string service role key).
+
+**Status:** deployed ke `vcktcdofiyvdsexpvtjj` (2026-08-23).
+
+Deploy ulang (butuh `SUPABASE_ACCESS_TOKEN` akun Batara di `.env`):
 
 ```sh
 npx supabase functions deploy purge-aduan --use-api --project-ref vcktcdofiyvdsexpvtjj
@@ -41,29 +46,19 @@ npx supabase functions deploy purge-aduan --use-api --project-ref vcktcdofiyvdse
 
 ### Jadwal harian (pg_cron + pg_net)
 
-Di SQL Editor (setelah extension aktif di project):
+**Status:** aktif — job `purge-aduan-daily`, schedule `15 17 * * *` (~00:15 WIB).
+
+Prerequisite (sekali, sudah diterapkan 2026-08-23):
+
+1. Extension ON: `pg_cron`, `pg_net`, `supabase_vault`
+2. Vault secret `service_role_key` (service role dari Dashboard → API)
+3. Jalankan `supabase/migrations/20260823_purge_cron.sql`
+
+Verifikasi:
 
 ```sql
--- Sesuaikan project-ref URL function
-select cron.schedule(
-  'purge-aduan-daily',
-  '15 17 * * *', -- ~00:15 WIB (UTC+7)
-  $$
-  select net.http_post(
-    url := 'https://vcktcdofiyvdsexpvtjj.supabase.co/functions/v1/purge-aduan',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || (
-        select decrypted_secret from vault.decrypted_secrets where name = 'service_role_key' limit 1
-      )
-    ),
-    body := '{}'::jsonb
-  );
-  $$
-);
+select jobid, jobname, schedule, active from cron.job where jobname = 'purge-aduan-daily';
 ```
-
-Alternatif tanpa Vault: panggil manual / Cron Dashboard dengan header Bearer service role (jangan commit key).
 
 Uji sekali:
 

@@ -12,24 +12,55 @@ function json(body: unknown, status = 200) {
   })
 }
 
+function parseJwt(token: string): { role?: string; ref?: string } | null {
+  try {
+    const part = token.split(".")[1]
+    if (!part) return null
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/")
+    const pad = b64 + "=".repeat((4 - (b64.length % 4)) % 4)
+    return JSON.parse(atob(pad)) as { role?: string; ref?: string }
+  } catch {
+    return null
+  }
+}
+
+function projectRefFromUrl(url: string): string {
+  try {
+    const host = new URL(url).hostname
+    return host.split(".")[0] ?? ""
+  } catch {
+    return ""
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
   }
 
-  // Cron / manual: Bearer service role atau header cron secret
-  const auth = req.headers.get("Authorization") ?? ""
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-  if (!serviceKey || auth !== `Bearer ${serviceKey}`) {
+  const url = Deno.env.get("SUPABASE_URL") ?? ""
+  const serviceKey =
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
+    Deno.env.get("SUPABASE_SECRET_KEY") ??
+    ""
+
+  const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim()
+  const claims = parseJwt(token)
+  const ref = projectRefFromUrl(url)
+  const authorized =
+    !!token &&
+    ((!!serviceKey && token === serviceKey) ||
+      (claims?.role === "service_role" && !!ref && claims.ref === ref))
+
+  if (!authorized) {
     return json({ error: "Unauthorized" }, 401)
   }
 
-  const url = Deno.env.get("SUPABASE_URL")
   if (!url) return json({ error: "Missing URL" }, 500)
 
-  const admin = createClient(url, serviceKey)
+  const admin = createClient(url, serviceKey || token)
 
-  // H+7 setelah dijawab (WIB): dijawab_at + 7 hari < sekarang
+  // H+7 setelah dijawab: dijawab_at + 7 hari < sekarang
   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
   const { data: rows, error: selErr } = await admin

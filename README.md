@@ -49,6 +49,7 @@ dan menimpa deploy manual yang sehat:
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — pom
 
 Kalau env dashboard belum diisi: **matikan Workers Git Builds** dan pakai deploy manual saja.
+`npm run build` sekarang **gagal** jika `PUBLIC_`/`VITE_` Supabase hilang — supaya Git Builds tidak men-deploy situs mati.
 
 URL production (subdomain akun Cloudflare, diganti 2026-08-21):
 

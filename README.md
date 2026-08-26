@@ -54,12 +54,15 @@ Preview: `https://*-batara-tertib.bataratertib.workers.dev`
 
 Subdomain akun lama `izayrcy08.workers.dev` sudah tidak dipakai. Untuk URL tanpa bagian tengah, pasang **custom domain**.
 
-Deploy manual:
+Deploy manual (wajib `.env` di root sebelum build; cek akun Cloudflare dulu):
 
 ```powershell
+npx wrangler whoami   # harus izayrcy08@gmail.com / account 95caf137…
 npm run build
-npm run deploy
+npm run deploy        # otomatis tolak jika akun salah
 ```
+
+Jangan deploy dari akun Cloudflare lain (mis. Mebel Online). `wrangler.toml` sudah mengunci `account_id` Batara Tertib.
 
 ## Struktur
 

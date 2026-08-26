@@ -118,12 +118,25 @@ export function LaporanLiter() {
       .order("nama")
       .then(({ data, error: err }) => {
         if (err) setError("Tidak bisa memuat. Coba lagi.")
-        else setSpbu(data ?? [])
+        else {
+          const list = data ?? []
+          setSpbu(list)
+          const fromUrl = new URLSearchParams(window.location.search).get("spbu")
+          if (fromUrl && list.some((s) => s.id === fromUrl)) {
+            setSpbuId(fromUrl)
+          }
+        }
       })
   }, [])
 
   useEffect(() => {
     if (!supabase) return
+    if (from > to) {
+      setRows([])
+      setError("")
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setError("")
     void loadRekap(from, to, spbuId, produk)

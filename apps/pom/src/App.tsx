@@ -10,7 +10,7 @@ import { useAuth } from "./hooks/useAuth"
 import { Login } from "./pages/Login"
 import { AdminPanel } from "./pages/Admin"
 import { AduanPom } from "./components/AduanPom"
-import { supabase } from "./lib/supabase"
+import { requireSupabase, supabaseConfigured } from "./lib/supabase"
 import { labelAlasanTolak } from "./lib/tolak"
 import { compressImageToWebp, CompressImageError } from "@batara/ui/lib/compress-image"
 
@@ -83,6 +83,23 @@ function normalizePlat(input: string): string | null {
 }
 
 export function App() {
+  if (!supabaseConfigured) {
+    return (
+      <div
+        className="min-h-dvh flex flex-col items-center justify-center px-6 text-center"
+        style={{ background: "var(--bt-aspal)", color: "var(--bt-struk)" }}
+      >
+        <p className="text-lg font-medium" style={{ fontFamily: "var(--bt-font-display)" }}>
+          Belum terhubung ke server
+        </p>
+        <p className="mt-2 text-sm opacity-70">Build ulang dengan env Supabase, lalu refresh halaman.</p>
+      </div>
+    )
+  }
+  return <AppShell />
+}
+
+function AppShell() {
   const { session, profile, loading: authLoading, signIn, signOut } = useAuth()
 
   if (authLoading) {
@@ -117,6 +134,7 @@ function Dashboard({ profile, userId, onSignOut }: {
   userId: string
   onSignOut: () => void
 }) {
+  const supabase = requireSupabase()
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<Kendaraan[]>([])
   const [resultSummary, setResultSummary] = useState<Record<string, ResultSummary>>({})

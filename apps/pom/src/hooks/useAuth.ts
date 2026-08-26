@@ -16,6 +16,11 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false)
+      return
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       if (session) void fetchProfile(session.user.id)
@@ -35,6 +40,7 @@ export function useAuth() {
   }, [])
 
   async function loadProfileRow(userId: string) {
+    if (!supabase) return null
     const full = await supabase
       .from("profiles")
       .select("id, nama, role, spbu_id, aktif")
@@ -61,7 +67,7 @@ export function useAuth() {
     }
 
     if (data.aktif === false) {
-      await supabase.auth.signOut()
+      if (supabase) await supabase.auth.signOut()
       setProfile(null)
       setSession(null)
       setLoading(false)
@@ -73,6 +79,7 @@ export function useAuth() {
   }
 
   async function signIn(email: string, password: string) {
+    if (!supabase) return new Error("Belum terhubung ke server")
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error || !data.user) return new Error("Email atau password salah")
 
@@ -86,6 +93,7 @@ export function useAuth() {
   }
 
   async function signOut() {
+    if (!supabase) return
     await supabase.auth.signOut()
   }
 

@@ -5,7 +5,7 @@ import { Card, CardContent } from "@batara/ui/components/ui/card"
 import { Input } from "@batara/ui/components/ui/input"
 import { Label } from "@batara/ui/components/ui/label"
 import { toast } from "sonner"
-import { supabase } from "../lib/supabase"
+import { requireSupabase } from "../lib/supabase"
 import {
   PAGE,
   LAPORAN_LOAD_FAIL,
@@ -27,7 +27,7 @@ import {
   type Spbu,
 } from "../lib/adminApi"
 
-type AdminView = "petugas" | "spbu" | "kendaraan" | "riwayat" | "laporan"
+type AdminView = "petugas" | "spbu" | "kendaraan" | "riwayat" | "laporan" | "aduan"
 
 const NAV: { id: AdminView; label: string }[] = [
   { id: "petugas", label: "Petugas" },
@@ -35,6 +35,7 @@ const NAV: { id: AdminView; label: string }[] = [
   { id: "kendaraan", label: "Plat" },
   { id: "riwayat", label: "Riwayat" },
   { id: "laporan", label: "Laporan" },
+  { id: "aduan", label: "Aduan" },
 ]
 
 const inputStyle: CSSProperties = {
@@ -97,8 +98,10 @@ export function AdminPanel({ profile, onSignOut }: { profile: { nama: string }; 
             <TabKendaraan />
           ) : view === "riwayat" ? (
             <TabRiwayat spbu={spbu} />
-          ) : (
+          ) : view === "laporan" ? (
             <TabLaporan spbu={spbu} />
+          ) : (
+            <TabAduan spbu={spbu} />
           )}
         </div>
       </main>
@@ -107,7 +110,7 @@ export function AdminPanel({ profile, onSignOut }: { profile: { nama: string }; 
         className="fixed bottom-0 inset-x-0 z-20 border-t"
         style={{ background: "var(--bt-aspal)", borderColor: "rgba(240,211,94,0.25)", paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="max-w-md mx-auto w-full grid grid-cols-5">
+        <div className="max-w-md mx-auto w-full grid grid-cols-6">
           {NAV.map((item) => {
             const active = view === item.id
             return (
@@ -115,7 +118,7 @@ export function AdminPanel({ profile, onSignOut }: { profile: { nama: string }; 
                 key={item.id}
                 type="button"
                 onClick={() => setView(item.id)}
-                className="h-14 text-[11px] uppercase tracking-wide"
+                className="h-14 text-[10px] uppercase tracking-wide"
                 style={{
                   fontFamily: "var(--bt-font-display)",
                   color: active ? "var(--bt-led)" : "rgba(255,255,255,0.45)",
@@ -414,7 +417,7 @@ function TabSpbu({ spbu, onChange }: { spbu: Spbu[]; onChange: () => Promise<voi
       return
     }
     setSaving(true)
-    const { error } = await supabase.from("spbu").insert({ nama: nama.trim().toUpperCase(), aktif: true })
+    const { error } = await requireSupabase().from("spbu").insert({ nama: nama.trim().toUpperCase(), aktif: true })
     setSaving(false)
     if (error) {
       fail(error, "Gagal menambah SPBU")
@@ -433,7 +436,7 @@ function TabSpbu({ spbu, onChange }: { spbu: Spbu[]; onChange: () => Promise<voi
       return
     }
     setSaving(true)
-    const { error } = await supabase.from("spbu").update({ nama: nama.trim().toUpperCase() }).eq("id", edit.id)
+    const { error } = await requireSupabase().from("spbu").update({ nama: nama.trim().toUpperCase() }).eq("id", edit.id)
     setSaving(false)
     if (error) {
       fail(error, "Gagal menyimpan SPBU")
@@ -445,7 +448,7 @@ function TabSpbu({ spbu, onChange }: { spbu: Spbu[]; onChange: () => Promise<voi
   }
 
   async function toggleAktif(s: Spbu) {
-    const { error } = await supabase.from("spbu").update({ aktif: !s.aktif }).eq("id", s.id)
+    const { error } = await requireSupabase().from("spbu").update({ aktif: !s.aktif }).eq("id", s.id)
     if (error) {
       fail(error, "Gagal mengubah status SPBU")
       return
@@ -536,7 +539,7 @@ function TabKendaraan() {
       return
     }
     setSaving(true)
-    const { error } = await supabase.from("kendaraan").update({ plat_lengkap: p, angka_plat: angkaPlat(p) }).eq("id", edit.id)
+    const { error } = await requireSupabase().from("kendaraan").update({ plat_lengkap: p, angka_plat: angkaPlat(p) }).eq("id", edit.id)
     setSaving(false)
     if (error) {
       fail(error, "Gagal menyimpan plat")
@@ -549,15 +552,15 @@ function TabKendaraan() {
 
   async function hapus(k: Kendaraan) {
     const [{ count: trx }, { count: tolak }] = await Promise.all([
-      supabase.from("transaksi").select("id", { count: "exact", head: true }).eq("kendaraan_id", k.id),
-      supabase.from("tolakan").select("id", { count: "exact", head: true }).eq("kendaraan_id", k.id),
+      requireSupabase().from("transaksi").select("id", { count: "exact", head: true }).eq("kendaraan_id", k.id),
+      requireSupabase().from("tolakan").select("id", { count: "exact", head: true }).eq("kendaraan_id", k.id),
     ])
     if ((trx ?? 0) + (tolak ?? 0) > 0) {
       toast.error("Ada riwayat. Hapus riwayat dulu")
       return
     }
     if (!confirm(`Hapus ${k.plat_lengkap}?`)) return
-    const { error } = await supabase.from("kendaraan").delete().eq("id", k.id)
+    const { error } = await requireSupabase().from("kendaraan").delete().eq("id", k.id)
     if (error) {
       fail(error, "Gagal menghapus kendaraan")
       return
@@ -655,14 +658,14 @@ function TabRiwayat({ spbu }: { spbu: Spbu[] }) {
         toast.error("Liter harus angka lebih dari 0")
         return
       }
-      const { error } = await supabase.from("transaksi").update({ liter: n, produk }).eq("id", edit.id)
+      const { error } = await requireSupabase().from("transaksi").update({ liter: n, produk }).eq("id", edit.id)
       setSaving(false)
       if (error) {
         fail(error, "Gagal menyimpan pengisian")
         return
       }
     } else {
-      const { error } = await supabase.from("tolakan").update({ catatan: catatan.trim() || null }).eq("id", edit.id)
+      const { error } = await requireSupabase().from("tolakan").update({ catatan: catatan.trim() || null }).eq("id", edit.id)
       setSaving(false)
       if (error) {
         fail(error, "Gagal menyimpan tolakan")
@@ -677,7 +680,7 @@ function TabRiwayat({ spbu }: { spbu: Spbu[] }) {
   async function hapus(r: Riwayat) {
     if (!confirm("Hapus catatan ini?")) return
     const table = r.sumber === "transaksi" ? "transaksi" : "tolakan"
-    const { error } = await supabase.from(table).delete().eq("id", r.id)
+    const { error } = await requireSupabase().from(table).delete().eq("id", r.id)
     if (error) {
       fail(error, "Gagal menghapus")
       return
@@ -781,6 +784,12 @@ function TabLaporan({ spbu }: { spbu: Spbu[] }) {
   const [loadError, setLoadError] = useState("")
 
   useEffect(() => {
+    if (from > to) {
+      setRows([])
+      setLoadError("")
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setLoadError("")
     loadRekap(from, to, spbuId, produk)
@@ -855,6 +864,163 @@ function TabLaporan({ spbu }: { spbu: Spbu[] }) {
             </StrukCard>
           ))}
         </>
+      )}
+    </section>
+  )
+}
+
+type AdminAduan = {
+  id: string
+  kode_lacak: string
+  judul: string
+  isi: string
+  foto_url: string | null
+  jawaban: string | null
+  dijawab_at: string | null
+  disembunyikan: boolean
+  created_at: string
+  spbu_id: string
+  spbu?: { nama?: string } | { nama?: string }[] | null
+}
+
+function namaSpbuRel(value: AdminAduan["spbu"]): string {
+  if (Array.isArray(value)) return value[0]?.nama ?? "-"
+  return value?.nama ?? "-"
+}
+
+function TabAduan({ spbu }: { spbu: Spbu[] }) {
+  const [spbuId, setSpbuId] = useState<"semua" | string>("semua")
+  const [filter, setFilter] = useState<"semua" | "tampil" | "sembunyi">("semua")
+  const [rows, setRows] = useState<AdminAduan[]>([])
+  const [loading, setLoading] = useState(true)
+  const [busyId, setBusyId] = useState<string | null>(null)
+
+  const reload = useCallback(async () => {
+    setLoading(true)
+    let query = requireSupabase()
+      .from("aduan")
+      .select("id, kode_lacak, judul, isi, foto_url, jawaban, dijawab_at, disembunyikan, created_at, spbu_id, spbu:spbu_id(nama)")
+      .order("created_at", { ascending: false })
+      .limit(80)
+
+    if (spbuId !== "semua") query = query.eq("spbu_id", spbuId)
+    if (filter === "tampil") query = query.eq("disembunyikan", false)
+    if (filter === "sembunyi") query = query.eq("disembunyikan", true)
+
+    const { data, error } = await query
+    setLoading(false)
+    if (error) {
+      toast.error("Gagal memuat aduan. Coba lagi.")
+      setRows([])
+      return
+    }
+    setRows((data as AdminAduan[]) ?? [])
+  }, [spbuId, filter])
+
+  useEffect(() => {
+    void reload()
+  }, [reload])
+
+  async function setSembunyi(row: AdminAduan, hide: boolean) {
+    setBusyId(row.id)
+    const { error } = await requireSupabase()
+      .from("aduan")
+      .update({ disembunyikan: hide })
+      .eq("id", row.id)
+    setBusyId(null)
+    if (error) {
+      toast.error("Gagal mengubah tampilan aduan. Coba lagi.")
+      return
+    }
+    toast.success(hide ? "Aduan disembunyikan" : "Aduan ditampilkan lagi")
+    await reload()
+  }
+
+  return (
+    <section className="flex flex-col gap-2.5">
+      <p
+        className="text-xs uppercase tracking-wider"
+        style={{ fontFamily: "var(--bt-font-display)", color: "var(--bt-led)", opacity: 0.7 }}
+      >
+        Aduan — sembunyikan yang melanggar
+      </p>
+
+      <select
+        value={spbuId}
+        onChange={(e) => setSpbuId(e.target.value)}
+        className="h-12 px-3 rounded-md border-2 bg-transparent text-sm"
+        style={inputStyle}
+      >
+        <option value="semua" style={{ color: "#111", background: "#fff" }}>Semua SPBU</option>
+        {spbu.map((s) => (
+          <option key={s.id} value={s.id} style={{ color: "#111", background: "#fff" }}>{s.nama}</option>
+        ))}
+      </select>
+
+      <select
+        value={filter}
+        onChange={(e) => setFilter(e.target.value as "semua" | "tampil" | "sembunyi")}
+        className="h-12 px-3 rounded-md border-2 bg-transparent text-sm"
+        style={inputStyle}
+      >
+        <option value="semua" style={{ color: "#111", background: "#fff" }}>Semua status</option>
+        <option value="tampil" style={{ color: "#111", background: "#fff" }}>Tampil</option>
+        <option value="sembunyi" style={{ color: "#111", background: "#fff" }}>Disembunyikan</option>
+      </select>
+
+      {loading ? (
+        <p className="text-sm text-center py-8 text-white/40">Memuat…</p>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-center py-8 text-white/40">Belum ada aduan</p>
+      ) : (
+        rows.map((r) => (
+          <StrukCard key={r.id}>
+            <div className="flex justify-between gap-2 items-start">
+              <p className="text-sm font-semibold">{r.judul}</p>
+              <span className="text-[10px] tracking-wider shrink-0" style={{ fontFamily: "var(--bt-font-display)" }}>
+                {r.kode_lacak}
+              </span>
+            </div>
+            <p className="text-xs mt-1" style={{ color: "color-mix(in srgb, var(--bt-tinta) 55%, transparent)" }}>
+              {namaSpbuRel(r.spbu)} ·{" "}
+              {new Date(r.created_at).toLocaleString("id-ID", {
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+                timeZone: "Asia/Jakarta",
+              })}
+              {r.disembunyikan ? " · Disembunyikan" : ""}
+              {r.dijawab_at ? " · Sudah dijawab" : " · Belum dijawab"}
+            </p>
+            <p className="text-xs mt-2 whitespace-pre-wrap" style={{ color: "color-mix(in srgb, var(--bt-tinta) 75%, transparent)" }}>
+              {r.isi.length > 160 ? `${r.isi.slice(0, 160)}…` : r.isi}
+            </p>
+            <div className="mt-3">
+              {r.disembunyikan ? (
+                <Button
+                  type="button"
+                  disabled={busyId === r.id}
+                  onClick={() => void setSembunyi(r, false)}
+                  className="h-10 w-full font-bold uppercase tracking-wider"
+                  style={{ fontFamily: "var(--bt-font-display)", background: "var(--bt-fascia)", color: "var(--bt-struk)" }}
+                >
+                  {busyId === r.id ? "…" : "Tampilkan lagi"}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  disabled={busyId === r.id}
+                  onClick={() => void setSembunyi(r, true)}
+                  className="h-10 w-full font-bold uppercase tracking-wider"
+                  style={{ fontFamily: "var(--bt-font-display)", background: "var(--bt-tolak)", color: "#fff" }}
+                >
+                  {busyId === r.id ? "…" : "Sembunyikan"}
+                </Button>
+              )}
+            </div>
+          </StrukCard>
+        ))
       )}
     </section>
   )

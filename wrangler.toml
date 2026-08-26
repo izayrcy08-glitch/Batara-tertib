@@ -3,6 +3,8 @@
 # Deploy: npx wrangler deploy
 
 name = "batara-tertib"
+# Kunci ke akun Batara Tertib — bukan Mebel Online
+account_id = "95caf13786fcd5ba9573aff3a6390524"
 compatibility_date = "2026-08-21"
 
 [assets]

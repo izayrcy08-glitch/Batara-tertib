@@ -1,0 +1,107 @@
+---
+import Base from "../../layouts/Base.astro"
+import { getSpbuPages, type SpbuPage } from "../../lib/spbu"
+
+export async function getStaticPaths() {
+  const list = await getSpbuPages()
+  return list.map((spbu) => ({
+    params: { slug: spbu.slug },
+    props: { spbu },
+  }))
+}
+
+interface Props {
+  spbu: SpbuPage
+}
+
+const { spbu } = Astro.props
+
+const pageTitle = `${spbu.nama} — Batara Tertib`
+const pageDescription = `Cek pengeluaran BBM dan kirim aduan ke ${spbu.nama}, Muara Teweh, Kabupaten Barito Utara.`
+const laporanHref = `/laporan?spbu=${spbu.id}`
+const aduanHref = `/aduan?spbu=${spbu.id}`
+---
+
+<Base title={pageTitle} description={pageDescription}>
+  <a href="/" class="inline-flex items-center gap-1 text-sm text-[var(--bt-fascia)] mb-6 hover:underline">
+    ← Kembali
+  </a>
+
+  <article>
+    <p
+      class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--bt-fascia)]/70 mb-2"
+      style="font-family: var(--bt-font-display);"
+    >
+      SPBU · Muara Teweh
+    </p>
+    <h2
+      class="text-2xl sm:text-3xl font-bold mb-3"
+      style="font-family: var(--bt-font-display);"
+    >
+      {spbu.nama}
+    </h2>
+    <p class="text-sm text-[var(--bt-tinta)]/65 leading-relaxed mb-8">
+      Halaman pengawasan BBM untuk warga sekitar {spbu.nama}. Lihat total liter yang
+      tercatat keluar dari pompa ini, atau kirim aduan anonim langsung ke SPBU ini.
+    </p>
+
+    <section class="flex flex-col gap-3" aria-label="Layanan untuk SPBU ini">
+      <a
+        href={laporanHref}
+        class="group flex items-center gap-4 rounded-lg border border-[var(--bt-tinta)]/10 bg-white px-4 py-4 hover:border-[var(--bt-fascia)]/30 transition-colors"
+      >
+        <span
+          class="shrink-0 inline-flex items-center justify-center size-10 rounded-lg text-[var(--bt-struk)]"
+          style="background-color: var(--bt-fascia);"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16V8"/><path d="M12 16v-5"/><path d="M17 16V5"/></svg>
+        </span>
+        <div class="flex-1 min-w-0">
+          <p class="text-base font-bold" style="font-family: var(--bt-font-display);">
+            Cek Pengeluaran BBM
+          </p>
+          <p class="text-xs text-[var(--bt-tinta)]/50 mt-0.5">Filter sudah ke {spbu.nama}</p>
+        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-30 group-hover:opacity-70 group-hover:translate-x-0.5 transition-all"><path d="m9 18 6-6-6-6"/></svg>
+      </a>
+
+      <a
+        href={aduanHref}
+        class="group flex items-center gap-4 rounded-lg border border-[var(--bt-tinta)]/10 bg-white px-4 py-4 hover:border-[var(--bt-fascia)]/30 transition-colors"
+      >
+        <span
+          class="shrink-0 inline-flex items-center justify-center size-10 rounded-lg text-[var(--bt-struk)]"
+          style="background-color: var(--bt-merah);"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </span>
+        <div class="flex-1 min-w-0">
+          <p class="text-base font-bold" style="font-family: var(--bt-font-display);">
+            Kirim Aduan
+          </p>
+          <p class="text-xs text-[var(--bt-tinta)]/50 mt-0.5">Anonim ke {spbu.nama}</p>
+        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-30 group-hover:opacity-70 group-hover:translate-x-0.5 transition-all"><path d="m9 18 6-6-6-6"/></svg>
+      </a>
+
+      <a
+        href="/cek-plat"
+        class="group flex items-center gap-4 rounded-lg border border-[var(--bt-tinta)]/10 bg-white px-4 py-4 hover:border-[var(--bt-fascia)]/30 transition-colors"
+      >
+        <span
+          class="shrink-0 inline-flex items-center justify-center size-10 rounded-lg text-[var(--bt-struk)]"
+          style="background-color: var(--bt-biru);"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </span>
+        <div class="flex-1 min-w-0">
+          <p class="text-base font-bold" style="font-family: var(--bt-font-display);">
+            Cek Plat Kendaraan
+          </p>
+          <p class="text-xs text-[var(--bt-tinta)]/50 mt-0.5">Riwayat pengisian 7 hari</p>
+        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 opacity-30 group-hover:opacity-70 group-hover:translate-x-0.5 transition-all"><path d="m9 18 6-6-6-6"/></svg>
+      </a>
+    </section>
+  </article>
+</Base>

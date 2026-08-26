@@ -1,9 +1,10 @@
 ---
 import Base from "../layouts/Base.astro"
 import { FormAduan } from "../components/FormAduan"
+import { CariAduan } from "../components/CariAduan"
 ---
 
-<Base title="Kirim Aduan — Batara Tertib">
+<Base title="Aduan — Batara Tertib" description="Kirim aduan anonim ke SPBU atau lacak status dengan kode lacak.">
   <a href="/" class="inline-flex items-center gap-1 text-sm text-[var(--bt-fascia)] mb-6 hover:underline">
     ← Kembali
   </a>
@@ -12,11 +13,31 @@ import { FormAduan } from "../components/FormAduan"
     class="text-2xl font-bold mb-1"
     style="font-family: var(--bt-font-display);"
   >
-    Kirim Aduan
+    Aduan
   </h2>
   <p class="text-sm text-[var(--bt-tinta)]/60 mb-6">
-    Laporan Anda tercatat sebagai anonim.
+    Kirim laporan anonim, atau lacak status dengan kode.
   </p>
 
-  <FormAduan client:load />
+  <section class="mb-10" aria-labelledby="kirim-aduan">
+    <h3
+      id="kirim-aduan"
+      class="text-sm font-semibold uppercase tracking-wider text-[var(--bt-fascia)] mb-4"
+      style="font-family: var(--bt-font-display);"
+    >
+      Kirim Aduan
+    </h3>
+    <FormAduan client:load />
+  </section>
+
+  <section aria-labelledby="lacak-aduan">
+    <h3
+      id="lacak-aduan"
+      class="text-sm font-semibold uppercase tracking-wider text-[var(--bt-fascia)] mb-4"
+      style="font-family: var(--bt-font-display);"
+    >
+      Lacak Aduan
+    </h3>
+    <CariAduan client:load />
+  </section>
 </Base>

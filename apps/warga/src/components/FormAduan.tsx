@@ -32,7 +32,12 @@ export function FormAduan() {
           setLoadSpbuError(FAIL)
           return
         }
-        setSpbuList((data as Spbu[]) ?? [])
+        const list = (data as Spbu[]) ?? []
+        setSpbuList(list)
+        const fromUrl = new URLSearchParams(window.location.search).get("spbu")
+        if (fromUrl && list.some((s) => s.id === fromUrl)) {
+          setSpbuId(fromUrl)
+        }
       })
   }, [])
 
@@ -109,7 +114,7 @@ export function FormAduan() {
       >
         <p className="text-sm font-medium text-[var(--bt-fascia)]">Aduan terkirim</p>
         <p className="text-sm text-[var(--bt-tinta)]/70">
-          Simpan kode lacak ini. Pakai untuk menanyakan status ke SPBU.
+          Simpan kode lacak ini. Cek status di bagian Lacak Aduan di bawah.
         </p>
         <p
           className="text-3xl font-bold tracking-[0.2em] text-center py-3"
@@ -130,7 +135,7 @@ export function FormAduan() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
       {loadSpbuError ? (
         <p className="text-sm text-[var(--bt-merah)]">{loadSpbuError}</p>
       ) : null}

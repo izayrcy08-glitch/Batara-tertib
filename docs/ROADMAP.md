@@ -31,7 +31,7 @@
 
 Login admin di URL `/pom` yang sama; role `admin` membuka panel kelola (bukan ISI/TOLAK). Bukan app terpisah.
 
-Kulit: header fascia + konten `max-w-md` + kartu struk krem + aksi di bawah data + nav bawah 5 item (Petugas, SPBU, Plat, Riwayat, Laporan).
+Kulit: header fascia + konten `max-w-md` + kartu struk krem + aksi di bawah data + nav bawah 6 item (Petugas, SPBU, Plat, Riwayat, Laporan, Aduan).
 
 - [x] Login admin → panel kelola (bukan ISI/TOLAK)
 - [x] Kelola SPBU (nama, aktif/nonaktif, tambah)
@@ -39,7 +39,7 @@ Kulit: header fascia + konten `max-w-md` + kartu struk krem + aksi di bawah data
 - [x] Lihat semua kendaraan; edit plat; hapus (hanya jika belum ada riwayat)
 - [x] Lihat riwayat pengisian semua SPBU (filter tanggal + SPBU + plat); edit dan hapus
 - [x] Laporan total liter BBM per jenis per SPBU (filter rentang tanggal, satu/semua SPBU, Pertalite/Pertamax/keduanya)
-- [ ] Sembunyikan aduan melanggar — ditunda V2
+- [x] Sembunyikan aduan melanggar — tab Aduan (admin)
 
 SQL `supabase/migrations/20260818_v1_admin.sql` dijalankan di Dashboard 2026-08-18 (`Success. No rows returned` = DDL OK). Isi: `profiles.email`/`aktif`, RLS, max 2 petugas, RPC `rekap_bbm`.
 
@@ -57,10 +57,10 @@ Fix cast enum: `supabase/migrations/20260821_fix_rekap_bbm_cast.sql` diterapkan 
 - [x] Aduan anonim: SPBU, judul, isi, foto opsional, kode lacak (tampil setelah kirim)
 - [x] Jawab SPBU di pompa (satu balasan, bukan utas panjang)
 - [x] Purge H+7 setelah ditanggapi: hapus baris aduan + objek Storage (foto kendaraan tetap)
-- [ ] Halaman per SPBU (SEO)
-- [ ] Cek plat 7 hari
-- [ ] Cari aduan
-- [ ] Sembunyikan aduan melanggar (admin)
+- [x] Halaman per SPBU (SEO)
+- [x] Cek plat 7 hari
+- [x] Cari aduan
+- [x] Sembunyikan aduan melanggar (admin)
 
 ## V3 — PWA + stok
 
@@ -75,8 +75,10 @@ ANPR, MyPertamina, Samsat, native store, keuangan, CMS, peta GIS, kuota liter pe
 
 ## Catatan
 
-V1 inti selesai (`525adbc` di `origin/master`). Slice V2 aduan + WebP dikerjakan tanpa menu baru di luar yang sudah di ROADMAP.
+V1 inti selesai (`525adbc` di `origin/master`). Slice V2 warga selesai: WebP, aduan, purge H+7, cek plat, halaman SPBU SEO, cari aduan, sembunyikan aduan (admin).
 
 **Hosting (2026-08-21):** Cloudflare Workers + static assets. Deploy Git: `npm run build` → `npx wrangler deploy`. Subdomain akun diganti `izayrcy08` → `bataratertib`. Production: `https://batara-tertib.bataratertib.workers.dev` (+ `/pom/`).
 
 **Infra aduan (2026-08-23):** Edge Function `purge-aduan` deployed; cron `purge-aduan-daily` (~00:15 WIB) via pg_cron + Vault `service_role_key`.
+
+**SQL V2 warga (2026-08-23):** `cek_plat_rpc` + `aduan_cari_sembunyi` diterapkan di Dashboard.

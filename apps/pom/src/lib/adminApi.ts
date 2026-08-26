@@ -1,6 +1,11 @@
 import { supabase } from "./supabase"
 import { labelAlasanTolak } from "./tolak"
 
+function sb() {
+  if (!supabase) throw new Error("Belum terhubung ke server")
+  return supabase
+}
+
 export type ProdukFilter = "semua" | "Pertalite" | "Pertamax"
 export type Spbu = { id: string; nama: string; aktif: boolean }
 export type Petugas = {
@@ -73,7 +78,7 @@ type FnBody =
   | { action: "delete"; id: string }
 
 export async function invokeAdminUsers(body: FnBody): Promise<{ deactivated?: boolean; deleted?: boolean }> {
-  const { data, error } = await supabase.functions.invoke("admin-users", { body })
+  const { data, error } = await sb().functions.invoke("admin-users", { body })
   const payload = data as { error?: string; deactivated?: boolean; deleted?: boolean } | null
   if (payload?.error) throw new Error(payload.error)
   if (error) {
@@ -93,7 +98,7 @@ export async function invokeAdminUsers(body: FnBody): Promise<{ deactivated?: bo
 }
 
 export async function loadSpbu(): Promise<Spbu[]> {
-  const { data, error } = await supabase
+  const { data, error } = await sb()
     .from("spbu")
     .select("id, nama, aktif")
     .order("nama")
@@ -102,7 +107,7 @@ export async function loadSpbu(): Promise<Spbu[]> {
 }
 
 export async function loadPetugas(): Promise<Petugas[]> {
-  const full = await supabase
+  const full = await sb()
     .from("profiles")
     .select("id, nama, email, spbu_id, aktif")
     .eq("role", "petugas")
@@ -117,7 +122,7 @@ export async function loadPetugas(): Promise<Petugas[]> {
     }))
   }
 
-  const basic = await supabase
+  const basic = await sb()
     .from("profiles")
     .select("id, nama, spbu_id")
     .eq("role", "petugas")
@@ -134,7 +139,7 @@ export async function loadPetugas(): Promise<Petugas[]> {
 
 export async function loadKendaraan(q: string, offset: number): Promise<Kendaraan[]> {
   const safe = safeSearch(q)
-  let query = supabase
+  let query = sb()
     .from("kendaraan")
     .select("id, plat_lengkap, angka_plat, foto_url")
     .order("plat_lengkap")
@@ -159,7 +164,7 @@ export async function loadRiwayat(opts: {
   const { from, to } = wibRangeIso(opts.from, opts.to)
   const plat = safeSearch(opts.plat)
 
-  let trxQuery = supabase
+  let trxQuery = sb()
     .from("transaksi")
     .select("id, kendaraan_id, spbu_id, liter, produk, created_at, kendaraan:kendaraan_id(plat_lengkap), spbu:spbu_id(nama)")
     .gte("created_at", from)
@@ -167,7 +172,7 @@ export async function loadRiwayat(opts: {
     .order("created_at", { ascending: false })
     .limit(200)
 
-  let tolakQuery = supabase
+  let tolakQuery = sb()
     .from("tolakan")
     .select("id, kendaraan_id, spbu_id, catatan, alasan, created_at, kendaraan:kendaraan_id(plat_lengkap), spbu:spbu_id(nama)")
     .gte("created_at", from)
@@ -256,7 +261,7 @@ async function rekapFromTransaksi(
   produk: ProdukFilter,
 ): Promise<RekapRow[]> {
   const { from, to } = wibRangeIso(fromKey, toKey)
-  let query = supabase
+  let query = sb()
     .from("transaksi")
     .select("liter, produk, spbu_id, spbu:spbu_id(nama)")
     .gte("created_at", from)
@@ -295,7 +300,7 @@ export async function loadRekap(
   spbuId: string | "semua",
   produk: ProdukFilter,
 ): Promise<RekapRow[]> {
-  const { data, error } = await supabase.rpc("rekap_bbm", {
+  const { data, error } = await sb().rpc("rekap_bbm", {
     p_from: from,
     p_to: to,
     p_spbu_id: spbuId === "semua" ? null : spbuId,

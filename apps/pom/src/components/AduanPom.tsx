@@ -3,7 +3,7 @@ import { Button } from "@batara/ui/components/ui/button"
 import { Textarea } from "@batara/ui/components/ui/textarea"
 import { Label } from "@batara/ui/components/ui/label"
 import { toast } from "sonner"
-import { supabase } from "../lib/supabase"
+import { requireSupabase } from "../lib/supabase"
 
 export type AduanRow = {
   id: string
@@ -31,10 +31,11 @@ export function AduanPom({ spbuId, userId, onClose }: Props) {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const { data, error } = await supabase
+    const { data, error } = await requireSupabase()
       .from("aduan")
       .select("id, kode_lacak, judul, isi, foto_url, jawaban, dijawab_at, created_at")
       .eq("spbu_id", spbuId)
+      .eq("disembunyikan", false)
       .order("created_at", { ascending: false })
       .limit(50)
 
@@ -58,7 +59,7 @@ export function AduanPom({ spbuId, userId, onClose }: Props) {
       return
     }
     setSaving(true)
-    const { error } = await supabase
+    const { error } = await requireSupabase()
       .from("aduan")
       .update({
         jawaban: text,

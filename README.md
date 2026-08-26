@@ -40,11 +40,15 @@ Proyek baru memakai **Workers + static assets** (bukan alur Pages lama). Config:
 | Root directory | `/` (root monorepo) |
 | Node | `20` (`.nvmrc` / env `NODE_VERSION=20`) |
 
-Variabel lingkungan (Production + Preview):
+Variabel lingkungan (Production + Preview) — **wajib** kalau Git Builds aktif.
+Tanpa ini, push ke `master` akan men-deploy bundle “Belum terhubung ke server”
+dan menimpa deploy manual yang sehat:
 
 - `NODE_VERSION` = `20`
 - `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY` — warga
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — pom
+
+Kalau env dashboard belum diisi: **matikan Workers Git Builds** dan pakai deploy manual saja.
 
 URL production (subdomain akun Cloudflare, diganti 2026-08-21):
 

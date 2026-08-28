@@ -3,6 +3,7 @@ import { Fuel, Eye, EyeOff } from "lucide-react"
 import { Button } from "@batara/ui/components/ui/button"
 import { Input } from "@batara/ui/components/ui/input"
 import { Label } from "@batara/ui/components/ui/label"
+import { InstallPrompt } from "../components/InstallPrompt"
 
 type Props = {
   onLogin: (email: string, password: string) => Promise<Error | null>
@@ -122,6 +123,8 @@ export function Login({ onLogin }: Props) {
             {loading ? "Masuk..." : "Masuk"}
           </Button>
         </form>
+
+        <InstallPrompt />
 
         <p
           className="text-center text-xs"

@@ -1,6 +1,6 @@
 # Roadmap — Batara Tertib
 
-**Terakhir diubah:** 2026-08-23
+**Terakhir diubah:** 2026-08-28
 
 ---
 
@@ -64,7 +64,7 @@ Fix cast enum: `supabase/migrations/20260821_fix_rekap_bbm_cast.sql` diterapkan 
 
 ## V3 — PWA + stok
 
-- [ ] PWA install petugas
+- [x] PWA install petugas
 - [ ] Stok/antrian (opsional)
 
 ## Bukan V1
@@ -75,7 +75,7 @@ ANPR, MyPertamina, Samsat, native store, keuangan, CMS, peta GIS, kuota liter pe
 
 ## Catatan
 
-V1 inti selesai (`525adbc` di `origin/master`). Slice V2 warga selesai: WebP, aduan, purge H+7, cek plat, halaman SPBU SEO, cari aduan, sembunyikan aduan (admin).
+V1 inti selesai (`525adbc` di `origin/master`). Slice V2 warga selesai: WebP, aduan, purge H+7, cek plat, halaman SPBU SEO, cari aduan, sembunyikan aduan (admin). V3 slice PWA install petugas: banner pasang di login `/pom`, manifest + ikon relatif ke `/pom/`.
 
 **Hosting (2026-08-21):** Cloudflare Workers + static assets. Deploy Git: `npm run build` → `npx wrangler deploy`. Subdomain akun diganti `izayrcy08` → `bataratertib`. Production: `https://batara-tertib.bataratertib.workers.dev` (+ `/pom/`).
 

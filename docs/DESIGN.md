@@ -38,6 +38,7 @@ Bukan logo Pertamina. Nama di fascia: **BATARA TERTIB**.
 - Pratinjau pecahan: `KH · 3455 · DGF`
 - Tombol ISI (pertalite) dan TOLAK (destructive) kontras tinggi, ibu jari
 - Riwayat seperti gulungan struk (kartu krem di atas aspal)
+- Pasang PWA: banner di layar login saja (Chrome: **Pasang aplikasi**; iOS: panduan Bagikan)
 
 ## Responsif
 

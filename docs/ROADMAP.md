@@ -65,7 +65,22 @@ Fix cast enum: `supabase/migrations/20260821_fix_rekap_bbm_cast.sql` diterapkan 
 ## V3 — PWA + stok
 
 - [x] PWA install petugas
-- [ ] Stok/antrian (opsional)
+- [x] Stok/antrian (opsional)
+
+### Stok/antrian (slice 2026-08-28)
+
+Petugas update manual di pompa sendiri; warga lihat live (bukan cache build).
+
+| Field | Nilai | Siapa ubah |
+|-------|--------|------------|
+| Stok Pertalite | Ada / Kosong | Petugas SPBU |
+| Stok Pertamax | Ada / Kosong | Petugas SPBU |
+| Antrian | Sepi / Sedang / Ramai | Petugas SPBU |
+
+- **Petugas `/pom`:** strip kompak di bawah header (bukan menu navbar baru).
+- **Warga:** badge di kartu SPBU beranda + panel di halaman `/spbu/[slug]`.
+- **DB:** kolom di `spbu` + RPC `set_kondisi_spbu` (petugas → SPBU sendiri).
+- Bukan: hitung antrian otomatis, stok liter persis, produk selain Pertalite/Pertamax.
 
 ## Bukan V1
 
@@ -75,7 +90,7 @@ ANPR, MyPertamina, Samsat, native store, keuangan, CMS, peta GIS, kuota liter pe
 
 ## Catatan
 
-V1 inti selesai (`525adbc` di `origin/master`). Slice V2 warga selesai: WebP, aduan, purge H+7, cek plat, halaman SPBU SEO, cari aduan, sembunyikan aduan (admin). V3 slice PWA install petugas: banner pasang di login `/pom`, manifest + ikon relatif ke `/pom/`.
+V1 inti selesai (`525adbc` di `origin/master`). Slice V2 warga selesai: WebP, aduan, purge H+7, cek plat, halaman SPBU SEO, cari aduan, sembunyikan aduan (admin). V3 slice PWA install petugas: banner pasang di login `/pom`, manifest + ikon relatif ke `/pom/`. V3 stok/antrian: petugas ubah manual di pompa, warga lihat badge live di beranda + halaman SPBU (migration `20260828_v3_stok_antrian.sql`).
 
 **Hosting (2026-08-21):** Cloudflare Workers + static assets. Deploy Git: `npm run build` → `npx wrangler deploy`. Subdomain akun diganti `izayrcy08` → `bataratertib`. Production: `https://batara-tertib.bataratertib.workers.dev` (+ `/pom/`).
 

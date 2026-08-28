@@ -15,6 +15,7 @@
     "build:warga": "npm run build -w apps/warga",
     "build": "npm run build:pages",
     "build:pages": "node scripts/check-env-at-build.mjs && npm run build:warga && npm run build:pom && node scripts/merge-pages.mjs",
-    "deploy": "node scripts/check-wrangler-account.mjs && node scripts/check-dist-supabase.mjs && npx wrangler deploy"
+    "deploy": "node scripts/check-wrangler-account.mjs && node scripts/check-dist-supabase.mjs && npx wrangler deploy",
+    "sync:cf-build-env": "node scripts/sync-cf-build-env.mjs"
   }
 }

@@ -1,8 +1,6 @@
 ---
 import Base from "../layouts/Base.astro"
-import { getSpbuPages } from "../lib/spbu"
-
-const spbuList = await getSpbuPages()
+import { SpbuListStokAntrian } from "../components/StokAntrian"
 ---
 
 <Base>
@@ -101,18 +99,6 @@ const spbuList = await getSpbuPages()
     >
       Lima SPBU Muara Teweh
     </h3>
-    <div class="flex flex-col gap-2">
-      {spbuList.map((s) => (
-        <a
-          href={`/spbu/${s.slug}`}
-          class="rounded-lg border border-[var(--bt-tinta)]/10 bg-white px-4 py-3 hover:border-[var(--bt-fascia)]/30 transition-colors"
-        >
-          <p class="text-base font-bold" style="font-family: var(--bt-font-display);">
-            {s.nama}
-          </p>
-          <p class="text-xs text-[var(--bt-tinta)]/45 mt-0.5">Laporan liter · aduan · info SPBU</p>
-        </a>
-      ))}
-    </div>
+    <SpbuListStokAntrian client:load />
   </section>
 </Base>

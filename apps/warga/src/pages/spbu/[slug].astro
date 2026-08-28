@@ -1,6 +1,7 @@
 ---
 import Base from "../../layouts/Base.astro"
 import { getSpbuPages, type SpbuPage } from "../../lib/spbu"
+import { StokAntrianPanel } from "../../components/StokAntrian"
 
 export async function getStaticPaths() {
   const list = await getSpbuPages()
@@ -40,10 +41,12 @@ const aduanHref = `/aduan?spbu=${spbu.id}`
     >
       {spbu.nama}
     </h2>
-    <p class="text-sm text-[var(--bt-tinta)]/65 leading-relaxed mb-8">
+    <p class="text-sm text-[var(--bt-tinta)]/65 leading-relaxed mb-6">
       Halaman pengawasan BBM untuk warga sekitar {spbu.nama}. Lihat total liter yang
       tercatat keluar dari pompa ini, atau kirim aduan anonim langsung ke SPBU ini.
     </p>
+
+    <StokAntrianPanel client:load spbuId={spbu.id} />
 
     <section class="flex flex-col gap-3" aria-label="Layanan untuk SPBU ini">
       <a

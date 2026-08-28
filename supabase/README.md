@@ -13,6 +13,7 @@ Jalankan berurutan di **Dashboard > SQL Editor**:
 5. `supabase/migrations/20260823_purge_cron.sql` — sudah (2026-08-23; jadwal `purge-aduan-daily`)
 6. `supabase/migrations/20260823_cek_plat_rpc.sql` — sudah (Dashboard 2026-08-23; RPC `cek_plat_riwayat`)
 7. `supabase/migrations/20260823_aduan_cari_sembunyi.sql` — sudah (Dashboard 2026-08-23; `disembunyikan` + RPC `cek_aduan`)
+8. `supabase/migrations/20260828_v3_stok_antrian.sql` — kolom stok/antrian di `spbu` + RPC `set_kondisi_spbu`
 
 Pesan `Success. No rows returned` normal: script hanya `ALTER`/`CREATE`, tidak ada `SELECT`.
 

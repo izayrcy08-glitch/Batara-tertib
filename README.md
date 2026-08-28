@@ -51,6 +51,14 @@ dan menimpa deploy manual yang sehat:
 Kalau env dashboard belum diisi: **matikan Workers Git Builds** dan pakai deploy manual saja.
 `npm run build` sekarang **gagal** jika `PUBLIC_`/`VITE_` Supabase hilang — supaya Git Builds tidak men-deploy situs mati.
 
+Sinkron otomatis dari `.env` lokal (butuh `CLOUDFLARE_API_TOKEN` user-scoped, permission **Workers Builds Configuration: Edit**):
+
+```powershell
+node scripts/sync-cf-build-env.mjs
+```
+
+Token bukan OAuth Wrangler — buat di [API Tokens](https://dash.cloudflare.com/profile/api-tokens). Script mengisi semua trigger (production + preview).
+
 URL production (subdomain akun Cloudflare, diganti 2026-08-21):
 
 `https://batara-tertib.bataratertib.workers.dev`

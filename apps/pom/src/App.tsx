@@ -10,6 +10,7 @@ import { useAuth } from "./hooks/useAuth"
 import { Login } from "./pages/Login"
 import { AdminPanel } from "./pages/Admin"
 import { AduanPom } from "./components/AduanPom"
+import { KondisiSpbu } from "./components/KondisiSpbu"
 import { requireSupabase, supabaseConfigured } from "./lib/supabase"
 import { labelAlasanTolak } from "./lib/tolak"
 import { compressImageToWebp, CompressImageError } from "@batara/ui/lib/compress-image"
@@ -689,6 +690,8 @@ function Dashboard({ profile, userId, onSignOut }: {
           </button>
         </div>
       </header>
+
+      {profile.spbu_id ? <KondisiSpbu spbuId={profile.spbu_id} /> : null}
 
       {/* Main */}
       <main className="flex-1 flex flex-col gap-5 px-4 py-6 max-w-md mx-auto w-full">

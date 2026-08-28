@@ -97,3 +97,5 @@ V1 inti selesai (`525adbc` di `origin/master`). Slice V2 warga selesai: WebP, ad
 **Infra aduan (2026-08-23):** Edge Function `purge-aduan` deployed; cron `purge-aduan-daily` (~00:15 WIB) via pg_cron + Vault `service_role_key`.
 
 **SQL V2 warga (2026-08-23):** `cek_plat_rpc` + `aduan_cari_sembunyi` diterapkan di Dashboard.
+
+**SQL V3 stok (2026-08-28):** `20260828_v3_stok_antrian.sql` diterapkan di Dashboard; production menampilkan badge stok/antrian live.

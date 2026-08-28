@@ -1,15 +1,14 @@
 /**
  * Sinkron env Supabase dari .env root ke Cloudflare Workers Git Builds.
  *
- * Butuh CLOUDFLARE_API_TOKEN (user-scoped) dengan permission:
- * - Workers Builds Configuration: Edit
- * - Workers Scripts: Read
+ * Token (urutan):
+ * 1. CLOUDFLARE_API_TOKEN di .env (user-scoped, permission Workers Builds Configuration: Edit)
+ * 2. OAuth Wrangler sudah login (`npx wrangler whoami`)
  *
- * Buat di: https://dash.cloudflare.com/profile/api-tokens
- *
- * Usage: node scripts/sync-cf-build-env.mjs
+ * Usage: npm run sync:cf-build-env
  */
 import { readFileSync, existsSync } from "node:fs"
+import { homedir } from "node:os"
 import { join } from "node:path"
 
 const ACCOUNT_ID = "95caf13786fcd5ba9573aff3a6390524"
@@ -43,13 +42,31 @@ function loadDotEnv(filePath) {
   }
 }
 
+function wranglerOAuthToken() {
+  const candidates = [
+    join(homedir(), ".wrangler", "config", "default.toml"),
+    join(homedir(), "AppData", "Roaming", "xdg.config", ".wrangler", "config", "default.toml"),
+  ]
+  for (const file of candidates) {
+    if (!existsSync(file)) continue
+    const text = readFileSync(file, "utf8")
+    const match = text.match(/^oauth_token\s*=\s*"([^"]+)"/m)
+    if (match?.[1]) return match[1]
+  }
+  return null
+}
+
 loadDotEnv(join(process.cwd(), ".env"))
 
-const token = process.env.CLOUDFLARE_API_TOKEN?.trim()
+const token = process.env.CLOUDFLARE_API_TOKEN?.trim() || wranglerOAuthToken()
 if (!token) {
-  console.error("CLOUDFLARE_API_TOKEN belum di-set di .env")
-  console.error("Buat token user-scoped dengan Workers Builds Configuration: Edit")
+  console.error("Token Cloudflare tidak ditemukan.")
+  console.error("Isi CLOUDFLARE_API_TOKEN di .env, atau jalankan: npx wrangler login")
   process.exit(1)
+}
+
+if (!process.env.CLOUDFLARE_API_TOKEN?.trim()) {
+  console.log("Pakai OAuth Wrangler — mungkin ditolak Builds API (butuh Workers CI Write).")
 }
 
 const values = {
@@ -78,7 +95,14 @@ async function cf(path, init = {}) {
   })
   const json = await res.json()
   if (!json.success) {
-    throw new Error(JSON.stringify(json.errors ?? json))
+    const msg = JSON.stringify(json.errors ?? json)
+    if (msg.includes("Authentication error") && !process.env.CLOUDFLARE_API_TOKEN?.trim()) {
+      throw new Error(
+        "OAuth Wrangler tidak cukup. Buat CLOUDFLARE_API_TOKEN (Workers CI Write) di .env, " +
+          "atau pakai GitHub Actions: npm run sync:github-secrets — lihat docs/CLOUDFLARE-DEPLOY.md",
+      )
+    }
+    throw new Error(msg)
   }
   return json.result
 }

@@ -48,16 +48,14 @@ dan menimpa deploy manual yang sehat:
 - `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY` — warga
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — pom
 
-Kalau env dashboard belum diisi: **matikan Workers Git Builds** dan pakai deploy manual saja.
-`npm run build` sekarang **gagal** jika `PUBLIC_`/`VITE_` Supabase hilang — supaya Git Builds tidak men-deploy situs mati.
-
-Sinkron otomatis dari `.env` lokal (butuh `CLOUDFLARE_API_TOKEN` user-scoped, permission **Workers Builds Configuration: Edit**):
+Kalau env dashboard belum diisi: **matikan Workers Git Builds** dan pakai **GitHub Actions** (disarankan) — lihat [`docs/CLOUDFLARE-DEPLOY.md`](docs/CLOUDFLARE-DEPLOY.md).
 
 ```powershell
-node scripts/sync-cf-build-env.mjs
+# sekali: token Edit Cloudflare Workers di .env → CLOUDFLARE_API_TOKEN
+npm run sync:github-secrets   # GitHub Actions (disarankan)
+# atau
+npm run sync:cf-build-env       # Cloudflare Git Builds (butuh token Workers CI Write)
 ```
-
-Token bukan OAuth Wrangler — buat di [API Tokens](https://dash.cloudflare.com/profile/api-tokens). Script mengisi semua trigger (production + preview).
 
 URL production (subdomain akun Cloudflare, diganti 2026-08-21):
 

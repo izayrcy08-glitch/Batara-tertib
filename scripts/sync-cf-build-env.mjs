@@ -70,7 +70,7 @@ if (!process.env.CLOUDFLARE_API_TOKEN?.trim()) {
 }
 
 const values = {
-  NODE_VERSION: process.env.NODE_VERSION?.trim() || "20",
+  NODE_VERSION: process.env.NODE_VERSION?.trim() || "22",
   PUBLIC_SUPABASE_URL: process.env.PUBLIC_SUPABASE_URL?.trim(),
   PUBLIC_SUPABASE_ANON_KEY: process.env.PUBLIC_SUPABASE_ANON_KEY?.trim(),
   VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL?.trim() || process.env.PUBLIC_SUPABASE_URL?.trim(),

@@ -6,7 +6,7 @@
     "apps/*"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev:pom": "npm run dev -w apps/pom",

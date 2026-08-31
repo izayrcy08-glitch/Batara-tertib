@@ -20,9 +20,10 @@ type Props = {
   spbuId: string
   userId: string
   onClose: () => void
+  onOpenCountChange?: (count: number) => void
 }
 
-export function AduanPom({ spbuId, userId, onClose }: Props) {
+export function AduanPom({ spbuId, userId, onClose, onOpenCountChange }: Props) {
   const [rows, setRows] = useState<AduanRow[]>([])
   const [loading, setLoading] = useState(true)
   const [jawabId, setJawabId] = useState<string | null>(null)
@@ -42,11 +43,14 @@ export function AduanPom({ spbuId, userId, onClose }: Props) {
     if (error) {
       toast.error("Gagal memuat aduan. Coba lagi.")
       setRows([])
+      onOpenCountChange?.(0)
     } else {
-      setRows((data as AduanRow[]) ?? [])
+      const list = (data as AduanRow[]) ?? []
+      setRows(list)
+      onOpenCountChange?.(list.filter((r) => !r.dijawab_at).length)
     }
     setLoading(false)
-  }, [spbuId])
+  }, [spbuId, onOpenCountChange])
 
   useEffect(() => {
     void load()

@@ -54,9 +54,9 @@ const users = [
     user_metadata: { nama: "Petugas Jingah", role: "petugas", spbu_id: "a0000000-0000-0000-0000-000000000004" },
   },
   {
-    email: "petugas.lanjas@batara.id",
+    email: "petugas.km02@batara.id",
     password: defaultPassword,
-    user_metadata: { nama: "Petugas Lanjas", role: "petugas", spbu_id: "a0000000-0000-0000-0000-000000000005" },
+    user_metadata: { nama: "Petugas KM 02 Jl Brigjen Katamso", role: "petugas", spbu_id: "a0000000-0000-0000-0000-000000000005" },
   },
 ];
 

@@ -4,13 +4,16 @@ import tailwindcss from "@tailwindcss/vite"
 import { VitePWA } from "vite-plugin-pwa"
 import path from "path"
 
-export default defineConfig(({ mode }) => ({
-  base: mode === "production" ? "/pom/" : "/",
+export default defineConfig({
+  // Sama di dev & build supaya preview lokal = path production (/pom/)
+  base: "/pom/",
   envDir: "../../",
   plugins: [
     react(),
     tailwindcss(),
     VitePWA({
+      // SW hanya di build — dev tetap HMR tanpa cache PWA
+      devOptions: { enabled: false },
       registerType: "autoUpdate",
       workbox: {
         cleanupOutdatedCaches: true,
@@ -56,4 +59,4 @@ export default defineConfig(({ mode }) => ({
       "@batara/tokens": path.resolve(__dirname, "../../packages/tokens"),
     },
   },
-}))
+})

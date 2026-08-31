@@ -1,6 +1,6 @@
 # Roadmap — Batara Tertib
 
-**Terakhir diubah:** 2026-08-28
+**Terakhir diubah:** 2026-08-31
 
 ---
 
@@ -61,13 +61,14 @@ Fix cast enum: `supabase/migrations/20260821_fix_rekap_bbm_cast.sql` diterapkan 
 - [x] Cek plat 7 hari
 - [x] Cari aduan
 - [x] Sembunyikan aduan melanggar (admin)
+- [x] Beranda warga: ganti daftar SPBU berulang → feed aduan publik 7 hari + hak jawab SPBU (bukan komentar warga)
 
 ## V3 — PWA + stok
 
 - [x] PWA install petugas
-- [x] Stok/antrian (opsional)
+- [x] Stok (opsional)
 
-### Stok/antrian (slice 2026-08-28)
+### Stok (slice 2026-08-28, antrian dihapus 2026-08-31)
 
 Petugas update manual di pompa sendiri; warga lihat live (bukan cache build).
 
@@ -75,12 +76,11 @@ Petugas update manual di pompa sendiri; warga lihat live (bukan cache build).
 |-------|--------|------------|
 | Stok Pertalite | Ada / Kosong | Petugas SPBU |
 | Stok Pertamax | Ada / Kosong | Petugas SPBU |
-| Antrian | Sepi / Sedang / Ramai | Petugas SPBU |
 
 - **Petugas `/pom`:** strip kompak di bawah header (bukan menu navbar baru).
-- **Warga:** badge di kartu SPBU beranda + panel di halaman `/spbu/[slug]`.
-- **DB:** kolom di `spbu` + RPC `set_kondisi_spbu` (petugas → SPBU sendiri).
-- Bukan: hitung antrian otomatis, stok liter persis, produk selain Pertalite/Pertamax.
+- **Warga:** panel stok di halaman `/spbu/[slug]` + papan kompak di beranda.
+- **DB:** kolom stok di `spbu` + RPC `set_kondisi_spbu` (petugas → SPBU sendiri).
+- Bukan: antrian manual, stok liter persis, produk selain Pertalite/Pertamax.
 
 ## Bukan V1
 
@@ -90,7 +90,7 @@ ANPR, MyPertamina, Samsat, native store, keuangan, CMS, peta GIS, kuota liter pe
 
 ## Catatan
 
-V1 inti selesai (`525adbc` di `origin/master`). Slice V2 warga selesai: WebP, aduan, purge H+7, cek plat, halaman SPBU SEO, cari aduan, sembunyikan aduan (admin). V3 slice PWA install petugas: banner pasang di login `/pom`, manifest + ikon relatif ke `/pom/`. V3 stok/antrian: petugas ubah manual di pompa, warga lihat badge live di beranda + halaman SPBU (migration `20260828_v3_stok_antrian.sql`).
+V1 inti selesai (`525adbc` di `origin/master`). Slice V2 warga selesai: WebP, aduan, purge H+7, cek plat, halaman SPBU SEO, cari aduan, sembunyikan aduan (admin). V3 slice PWA install petugas: banner pasang di login `/pom`, manifest + ikon relatif ke `/pom/`. V3 stok: petugas ubah manual di pompa, warga lihat stok live di halaman SPBU (migration `20260828_v3_stok_antrian.sql`; antrian dihapus `20260831_drop_antrian.sql`).
 
 **Hosting (2026-08-21):** Cloudflare Workers + static assets. Deploy Git: `npm run build` → `npx wrangler deploy`. Subdomain akun diganti `izayrcy08` → `bataratertib`. Production: `https://batara-tertib.bataratertib.workers.dev` (+ `/pom/`).
 
@@ -98,4 +98,10 @@ V1 inti selesai (`525adbc` di `origin/master`). Slice V2 warga selesai: WebP, ad
 
 **SQL V2 warga (2026-08-23):** `cek_plat_rpc` + `aduan_cari_sembunyi` diterapkan di Dashboard.
 
-**SQL V3 stok (2026-08-28):** `20260828_v3_stok_antrian.sql` diterapkan di Dashboard; production menampilkan badge stok/antrian live.
+**SQL V3 stok (2026-08-28):** `20260828_v3_stok_antrian.sql` diterapkan di Dashboard.
+
+**Hapus antrian (2026-08-31):** fitur antrian (Sepi/Sedang/Ramai) dihapus dari UI; RPC `set_kondisi_spbu` tanpa parameter antrian — jalankan `supabase/migrations/20260831_drop_antrian.sql` di Dashboard.
+
+**Koreksi SPBU (2026-08-31):** LANJAS → `SPBU KM 02 JL BRIGJEN KATAMSO` — jalankan `supabase/migrations/20260831_fix_spbu_katamso.sql` di Dashboard.
+
+**Beranda feed aduan (2026-08-30):** Section daftar SPBU di beranda diganti feed aduan publik 7 hari + hak jawab SPBU (bukan komentar warga). RPC `daftar_aduan_publik` — jalankan `supabase/migrations/20260830_daftar_aduan_publik.sql` di Dashboard. Stok tetap di halaman `/spbu/[slug]`.

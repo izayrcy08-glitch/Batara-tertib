@@ -10,7 +10,7 @@ export const SPBU_FALLBACK: SpbuPage[] = [
   { id: "a0000000-0000-0000-0000-000000000002", nama: "SPBU JL PENDREH", slug: "jl-pendreh" },
   { id: "a0000000-0000-0000-0000-000000000003", nama: "SPBU JL PRAMUKA", slug: "jl-pramuka" },
   { id: "a0000000-0000-0000-0000-000000000004", nama: "SPBU JINGAH", slug: "jingah" },
-  { id: "a0000000-0000-0000-0000-000000000005", nama: "SPBU LANJAS", slug: "lanjas" },
+  { id: "a0000000-0000-0000-0000-000000000005", nama: "SPBU KM 02 JL BRIGJEN KATAMSO", slug: "km-02-jl-brigjen-katamso" },
 ]
 
 export function slugFromNama(nama: string): string {

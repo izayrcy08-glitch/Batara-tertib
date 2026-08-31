@@ -114,7 +114,7 @@ export function FormAduan() {
       >
         <p className="text-sm font-medium text-[var(--bt-fascia)]">Aduan terkirim</p>
         <p className="text-sm text-[var(--bt-tinta)]/70">
-          Simpan kode lacak ini. Cek status di bagian Lacak Aduan di bawah.
+          Simpan kode lacak ini. Cek statusnya di beranda (kotak Cari aduan).
         </p>
         <p
           className="text-3xl font-bold tracking-[0.2em] text-center py-3"

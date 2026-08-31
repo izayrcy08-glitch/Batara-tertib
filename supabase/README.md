@@ -14,6 +14,8 @@ Jalankan berurutan di **Dashboard > SQL Editor**:
 6. `supabase/migrations/20260823_cek_plat_rpc.sql` — sudah (Dashboard 2026-08-23; RPC `cek_plat_riwayat`)
 7. `supabase/migrations/20260823_aduan_cari_sembunyi.sql` — sudah (Dashboard 2026-08-23; `disembunyikan` + RPC `cek_aduan`)
 8. `supabase/migrations/20260828_v3_stok_antrian.sql` — sudah (Dashboard 2026-08-28; kolom stok/antrian + RPC `set_kondisi_spbu`)
+9. `supabase/migrations/20260831_drop_antrian.sql` — antrian dihapus dari UI; RPC `set_kondisi_spbu` tanpa `p_antrian`
+10. `supabase/migrations/20260831_fix_spbu_katamso.sql` — LANJAS → KM 02 JL BRIGJEN KATAMSO
 
 Pesan `Success. No rows returned` normal: script hanya `ALTER`/`CREATE`, tidak ada `SELECT`.
 

@@ -4,30 +4,25 @@ import { toast } from "sonner"
 import { requireSupabase } from "../lib/supabase"
 
 type StokKondisi = "ada" | "kosong"
-type AntrianKondisi = "sepi" | "sedang" | "ramai"
 
 type Kondisi = {
   stok_pertalite: StokKondisi
   stok_pertamax: StokKondisi
-  antrian: AntrianKondisi
 }
+
+export type SpbuStok = Kondisi
 
 const STOK_OPTS: { value: StokKondisi; label: string }[] = [
   { value: "ada", label: "Ada" },
   { value: "kosong", label: "Kosong" },
 ]
 
-const ANTRIAN_OPTS: { value: AntrianKondisi; label: string }[] = [
-  { value: "sepi", label: "Sepi" },
-  { value: "sedang", label: "Sedang" },
-  { value: "ramai", label: "Ramai" },
-]
-
 type Props = {
   spbuId: string
+  onStokChange?: (stok: SpbuStok) => void
 }
 
-export function KondisiSpbu({ spbuId }: Props) {
+export function KondisiSpbu({ spbuId, onStokChange }: Props) {
   const supabase = requireSupabase()
   const [kondisi, setKondisi] = useState<Kondisi | null>(null)
   const [loading, setLoading] = useState(true)
@@ -39,7 +34,7 @@ export function KondisiSpbu({ spbuId }: Props) {
     void (async () => {
       const { data, error } = await supabase
         .from("spbu")
-        .select("stok_pertalite, stok_pertamax, antrian")
+        .select("stok_pertalite, stok_pertamax")
         .eq("id", spbuId)
         .single()
       if (cancelled) return
@@ -48,24 +43,24 @@ export function KondisiSpbu({ spbuId }: Props) {
         setLoading(false)
         return
       }
-      setKondisi({
+      const next = {
         stok_pertalite: data.stok_pertalite as StokKondisi,
         stok_pertamax: data.stok_pertamax as StokKondisi,
-        antrian: data.antrian as AntrianKondisi,
-      })
+      }
+      setKondisi(next)
+      onStokChange?.(next)
       setLoading(false)
     })()
     return () => {
       cancelled = true
     }
-  }, [spbuId, supabase])
+  }, [spbuId, supabase, onStokChange])
 
   async function save(next: Kondisi) {
     setSaving(true)
     const { error } = await supabase.rpc("set_kondisi_spbu", {
       p_stok_pertalite: next.stok_pertalite,
       p_stok_pertamax: next.stok_pertamax,
-      p_antrian: next.antrian,
     })
     setSaving(false)
     if (error) {
@@ -73,7 +68,8 @@ export function KondisiSpbu({ spbuId }: Props) {
       return
     }
     setKondisi(next)
-    toast.success("Kondisi SPBU disimpan")
+    onStokChange?.(next)
+    toast.success("Stok SPBU disimpan")
   }
 
   if (loading) {
@@ -83,7 +79,7 @@ export function KondisiSpbu({ spbuId }: Props) {
         style={{ background: "var(--bt-fascia)", color: "rgba(255,255,255,0.7)" }}
       >
         <Loader2 className="size-3.5 animate-spin" />
-        Memuat kondisi…
+        Memuat stok…
       </div>
     )
   }
@@ -102,7 +98,7 @@ export function KondisiSpbu({ spbuId }: Props) {
         className="text-[10px] font-semibold uppercase tracking-wider"
         style={{ fontFamily: "var(--bt-font-display)", color: "var(--bt-led)", opacity: 0.85 }}
       >
-        Stok & antrian · lapangan
+        Stok · lapangan
       </p>
 
       <Row label="Pertalite">
@@ -119,14 +115,6 @@ export function KondisiSpbu({ spbuId }: Props) {
           value={kondisi.stok_pertamax}
           disabled={saving}
           onChange={(v) => void save({ ...kondisi, stok_pertamax: v as StokKondisi })}
-        />
-      </Row>
-      <Row label="Antrian">
-        <ToggleGroup
-          options={ANTRIAN_OPTS}
-          value={kondisi.antrian}
-          disabled={saving}
-          onChange={(v) => void save({ ...kondisi, antrian: v as AntrianKondisi })}
         />
       </Row>
     </div>

@@ -10,7 +10,7 @@ import { useAuth } from "./hooks/useAuth"
 import { Login } from "./pages/Login"
 import { AdminPanel } from "./pages/Admin"
 import { AduanPom } from "./components/AduanPom"
-import { KondisiSpbu } from "./components/KondisiSpbu"
+import { KondisiSpbu, type SpbuStok } from "./components/KondisiSpbu"
 import { requireSupabase, supabaseConfigured } from "./lib/supabase"
 import { labelAlasanTolak } from "./lib/tolak"
 import { compressImageToWebp, CompressImageError } from "@batara/ui/lib/compress-image"
@@ -161,11 +161,31 @@ function Dashboard({ profile, userId, onSignOut }: {
   const [daftarLoading, setDaftarLoading] = useState(false)
   const [cameraOpen, setCameraOpen] = useState(false)
   const [showAduan, setShowAduan] = useState(false)
+  const [aduanOpenCount, setAduanOpenCount] = useState(0)
+  const [stokPertalite, setStokPertalite] = useState<"ada" | "kosong">("ada")
+  const [stokPertamax, setStokPertamax] = useState<"ada" | "kosong">("ada")
+  const [riwayat7Open, setRiwayat7Open] = useState(false)
   const galleryInputRef = useRef<HTMLInputElement | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
   const PRODUK_BBM = ["Pertalite", "Pertamax"] as const
+
+  function handleStokChange(kondisi: SpbuStok) {
+    setStokPertalite(kondisi.stok_pertalite)
+    setStokPertamax(kondisi.stok_pertamax)
+    if (produk === "Pertalite" && kondisi.stok_pertalite === "kosong" && kondisi.stok_pertamax === "ada") {
+      setProduk("Pertamax")
+    } else if (produk === "Pertamax" && kondisi.stok_pertamax === "kosong" && kondisi.stok_pertalite === "ada") {
+      setProduk("Pertalite")
+    }
+  }
+
+  function produkStokAda(p: string): boolean {
+    if (p === "Pertalite") return stokPertalite === "ada"
+    if (p === "Pertamax") return stokPertamax === "ada"
+    return false
+  }
   const ALASAN_TOLAK: { value: AlasanTolakCode; label: string; catatan?: string; manual?: boolean }[] = [
     { value: "isi_ulang_hari_ini", label: "Sudah isi hari ini" },
     { value: "stnk_tidak_cocok", label: "STNK tidak cocok" },
@@ -185,8 +205,22 @@ function Dashboard({ profile, userId, onSignOut }: {
           if (data) setSpbuNama(data.nama)
         })
       void loadRiwayatSpbuHariIni(profile.spbu_id)
+      void loadAduanOpenCount(profile.spbu_id)
+    } else {
+      setAduanOpenCount(0)
     }
   }, [profile.spbu_id])
+
+  async function loadAduanOpenCount(spbuId: string) {
+    const { count, error } = await supabase
+      .from("aduan")
+      .select("id", { count: "exact", head: true })
+      .eq("spbu_id", spbuId)
+      .eq("disembunyikan", false)
+      .is("dijawab_at", null)
+
+    if (!error) setAduanOpenCount(count ?? 0)
+  }
 
   async function loadRiwayatSpbuHariIni(spbuId: string) {
     setRiwayatSpbuLoading(true)
@@ -372,13 +406,16 @@ function Dashboard({ profile, userId, onSignOut }: {
         setDaftarPlat("")
         setFotoKendaraan(null)
         setShowDaftarForm(false)
-        await hydrateResultSummary(list)
+        const summaries = await hydrateResultSummary(list)
+        if (list.length === 1) {
+          await handleSelect(list[0], summaries[list[0].id])
+        }
       }
     }
     setSearching(false)
   }
 
-  async function hydrateResultSummary(list: Kendaraan[]) {
+  async function hydrateResultSummary(list: Kendaraan[]): Promise<Record<string, ResultSummary>> {
     const summaries = await Promise.all(
       list.map(async (k) => {
         const [trxRes, tolakRes] = await Promise.all([
@@ -416,13 +453,13 @@ function Dashboard({ profile, userId, onSignOut }: {
             day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
           })}`
         } else if (lastTime && trx) {
+          const waktu = new Date(lastTime).toLocaleString("id-ID", {
+            day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+          })
+          const spbuSuffix = spbuNama ? ` · ${spbuNama}` : ""
           lastText = alreadyFilledToday
-            ? `Sudah isi hari ini · ${trx.liter}L ${trx.produk} · ${new Date(trx.created_at).toLocaleString("id-ID", {
-                day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
-              })}`
-            : `Terakhir: ISI ${trx.liter}L ${trx.produk} · ${new Date(lastTime).toLocaleString("id-ID", {
-                day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
-              })}`
+            ? `${trx.liter} L ${trx.produk} · ${waktu}${spbuSuffix}`
+            : `Terakhir isi ${trx.liter} L ${trx.produk} · ${waktu}${spbuSuffix}`
         }
 
         const summary: ResultSummary = {
@@ -437,7 +474,9 @@ function Dashboard({ profile, userId, onSignOut }: {
       }),
     )
 
-    setResultSummary((prev) => ({ ...prev, ...Object.fromEntries(summaries) }))
+    const map = Object.fromEntries(summaries) as Record<string, ResultSummary>
+    setResultSummary((prev) => ({ ...prev, ...map }))
+    return map
   }
 
   async function loadRiwayat(k: Kendaraan) {
@@ -501,11 +540,18 @@ function Dashboard({ profile, userId, onSignOut }: {
     setRiwayatLoading(false)
   }
 
-  async function handleSelect(k: Kendaraan) {
+  async function handleSelect(k: Kendaraan, summaryOverride?: ResultSummary) {
     setSelected(k)
     setShowAksiPanel(true)
     setLiter("")
-    await loadRiwayat(k)
+    setRiwayat7Open(false)
+    const summary = summaryOverride ?? resultSummary[k.id]
+    if (summary?.statusTone === "warn") {
+      setRiwayat([])
+      setRiwayatLoading(false)
+    } else {
+      await loadRiwayat(k)
+    }
   }
 
   async function handleIsi(kendaraanId: string) {
@@ -516,6 +562,14 @@ function Dashboard({ profile, userId, onSignOut }: {
     }
     if (!PRODUK_BBM.includes(produk as (typeof PRODUK_BBM)[number])) {
       toast.error("Pilih produk BBM")
+      return
+    }
+    if (produk === "Pertalite" && stokPertalite === "kosong") {
+      toast.error("Stok Pertalite kosong. Ubah stok di strip atas jika sudah ada.")
+      return
+    }
+    if (produk === "Pertamax" && stokPertamax === "kosong") {
+      toast.error("Stok Pertamax kosong. Ubah stok di strip atas jika sudah ada.")
       return
     }
 
@@ -668,10 +722,27 @@ function Dashboard({ profile, userId, onSignOut }: {
               color: "white",
               fontFamily: "var(--bt-font-display)",
             }}
-            title="Aduan SPBU"
+            title={
+              aduanOpenCount > 0
+                ? `${aduanOpenCount} aduan belum dijawab`
+                : "Aduan SPBU"
+            }
+            aria-label={
+              aduanOpenCount > 0
+                ? `Aduan SPBU, ${aduanOpenCount} belum dijawab`
+                : "Aduan SPBU"
+            }
           >
             <MessageSquareWarning className="size-3.5" />
             Aduan
+            {aduanOpenCount > 0 ? (
+              <span
+                className="min-w-[1.125rem] h-[1.125rem] px-1 rounded-full inline-flex items-center justify-center text-[10px] font-bold leading-none"
+                style={{ background: "var(--bt-led)", color: "var(--bt-aspal)" }}
+              >
+                {aduanOpenCount > 99 ? "99+" : aduanOpenCount}
+              </span>
+            ) : null}
           </button>
           <span
             className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
@@ -691,12 +762,19 @@ function Dashboard({ profile, userId, onSignOut }: {
         </div>
       </header>
 
-      {profile.spbu_id ? <KondisiSpbu spbuId={profile.spbu_id} /> : null}
+      {profile.spbu_id ? (
+        <KondisiSpbu spbuId={profile.spbu_id} onStokChange={handleStokChange} />
+      ) : null}
 
       {/* Main */}
       <main className="flex-1 flex flex-col gap-5 px-4 py-6 max-w-md mx-auto w-full">
         {showAduan && profile.spbu_id ? (
-          <AduanPom spbuId={profile.spbu_id} userId={userId} onClose={() => setShowAduan(false)} />
+          <AduanPom
+            spbuId={profile.spbu_id}
+            userId={userId}
+            onClose={() => setShowAduan(false)}
+            onOpenCountChange={setAduanOpenCount}
+          />
         ) : null}
 
         {/* Search */}
@@ -843,57 +921,109 @@ function Dashboard({ profile, userId, onSignOut }: {
           </section>
         )}
 
-        {/* Results */}
-        {results.length > 0 && (
+        {/* Pilih plat — hanya jika belum dipilih atau banyak kandidat */}
+        {results.length > 0 && !selected && (
           <section className="flex flex-col gap-2">
+            <p
+              className="text-[10px] uppercase tracking-wider font-medium"
+              style={{ fontFamily: "var(--bt-font-display)", color: "var(--bt-led)", opacity: 0.65 }}
+            >
+              {results.length > 1 ? "Pilih plat" : "Hasil cari"}
+            </p>
             {results.map((k) => (
               <Card
                 key={k.id}
-                className={`border-0 shadow-none rounded-lg cursor-pointer transition-all ${
-                  selected?.id === k.id ? "ring-2" : ""
-                }`}
-                style={{
-                  background: selected?.id === k.id ? "#2a2a2a" : "#242424",
-                  ["--tw-ring-color" as any]: "var(--bt-led)",
-                }}
+                className="border-0 shadow-none rounded-lg cursor-pointer transition-all"
+                style={{ background: "#242424" }}
                 onClick={() => handleSelect(k)}
               >
-                <CardContent className="px-4 py-3">
+                <CardContent className="px-4 py-3 flex items-center justify-between gap-3">
                   <p
                     className="text-lg font-bold tracking-wider text-white"
                     style={{ fontFamily: "var(--bt-font-display)", fontVariantNumeric: "tabular-nums" }}
                   >
                     {k.plat_lengkap}
                   </p>
-                  <div className="mt-2 flex flex-col gap-1">
+                  <p
+                    className="text-[10px] uppercase tracking-wider font-semibold shrink-0"
+                    style={{
+                      fontFamily: "var(--bt-font-display)",
+                      color: resultSummary[k.id]?.statusTone === "warn" ? "var(--bt-merah-muda)" : "var(--bt-hijau)",
+                    }}
+                  >
+                    {resultSummary[k.id]?.statusText ?? "…"}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </section>
+        )}
+
+        {/* Plat aktif — satu blok info */}
+        {selected && (
+          <section className="flex flex-col gap-3">
+            {results.length > 1 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {results.map((k) => (
+                  <button
+                    key={k.id}
+                    type="button"
+                    onClick={() => handleSelect(k)}
+                    className="px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider"
+                    style={{
+                      fontFamily: "var(--bt-font-display)",
+                      fontVariantNumeric: "tabular-nums",
+                      background: selected.id === k.id ? "var(--bt-led)" : "rgba(255,255,255,0.1)",
+                      color: selected.id === k.id ? "var(--bt-aspal)" : "rgba(255,255,255,0.85)",
+                    }}
+                  >
+                    {k.plat_lengkap}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
+            <div
+              className="rounded-lg px-4 py-4 flex flex-col gap-2"
+              style={{
+                background: "#242424",
+                border: "1px solid color-mix(in srgb, var(--bt-led) 18%, transparent)",
+              }}
+            >
+              <p
+                className="text-2xl font-bold tracking-wider text-white"
+                style={{ fontFamily: "var(--bt-font-display)", fontVariantNumeric: "tabular-nums" }}
+              >
+                {selected.plat_lengkap}
+              </p>
+              {(() => {
+                const s = resultSummary[selected.id]
+                if (!s) {
+                  return <p className="text-xs text-white/40">Memuat ringkasan…</p>
+                }
+                return (
+                  <>
                     <p
                       className="text-[11px] uppercase tracking-wider font-semibold"
                       style={{
                         fontFamily: "var(--bt-font-display)",
-                        color: resultSummary[k.id]?.statusTone === "warn" ? "var(--bt-merah-muda)" : "var(--bt-hijau)",
+                        color: s.statusTone === "warn" ? "var(--bt-merah-muda)" : "var(--bt-hijau)",
                       }}
                     >
-                      {resultSummary[k.id]?.statusText ?? "Sudah terdaftar"}
+                      {s.statusText}
                     </p>
                     <p
-                      className="text-xs"
+                      className="text-sm leading-snug"
                       style={{
-                        color: resultSummary[k.id]?.lastTone === "warn"
-                          ? "var(--bt-merah-muda)"
-                          : "rgba(255,255,255,0.6)",
+                        color: s.lastTone === "warn" ? "var(--bt-merah-muda)" : "rgba(255,255,255,0.65)",
                       }}
                     >
-                      {resultSummary[k.id]?.lastText ?? "Memuat ringkasan..."}
+                      {s.lastText}
                     </p>
-                    {resultSummary[k.id]?.spbuNama ? (
-                      <p className="text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
-                        Dicatat di {resultSummary[k.id].spbuNama}
-                      </p>
-                    ) : null}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </>
+                )
+              })()}
+            </div>
           </section>
         )}
 
@@ -917,7 +1047,9 @@ function Dashboard({ profile, userId, onSignOut }: {
                   inputMode="numeric"
                   placeholder="20"
                   value={liter}
-                  disabled={resultSummary[selected.id]?.statusTone === "warn"}
+                  disabled={
+                    resultSummary[selected.id]?.statusTone === "warn" || !produkStokAda(produk)
+                  }
                   onChange={(e) => setLiter(e.target.value.replace(/[^\d]/g, ""))}
                   className="h-14 text-2xl tracking-widest text-center bg-transparent border-2 placeholder:opacity-30 disabled:opacity-40"
                   style={{
@@ -948,19 +1080,37 @@ function Dashboard({ profile, userId, onSignOut }: {
                     color: "var(--bt-led)",
                   }}
                 >
-                  {PRODUK_BBM.map((p) => (
-                    <option key={p} value={p} style={{ color: "#111", background: "#fff" }}>
-                      {p}
-                    </option>
-                  ))}
+                  {PRODUK_BBM.map((p) => {
+                    const kosong = !produkStokAda(p)
+                    return (
+                      <option
+                        key={p}
+                        value={p}
+                        disabled={kosong}
+                        style={{ color: "#111", background: "#fff" }}
+                      >
+                        {kosong ? `${p} (kosong)` : p}
+                      </option>
+                    )
+                  })}
                 </select>
               </div>
             </div>
 
+            {!produkStokAda(produk) ? (
+              <p className="text-xs text-center" style={{ color: "var(--bt-merah-muda)" }}>
+                Stok {produk} kosong — tidak bisa ISI. Ubah di strip stok atas jika sudah ada.
+              </p>
+            ) : null}
+
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => handleIsi(selected.id)}
-                disabled={isiLoading || resultSummary[selected.id]?.statusTone === "warn"}
+                disabled={
+                  isiLoading
+                  || resultSummary[selected.id]?.statusTone === "warn"
+                  || !produkStokAda(produk)
+                }
                 className="relative h-20 rounded-2xl text-white font-black text-2xl uppercase tracking-wider flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
                 style={{
                   fontFamily: "var(--bt-font-display)",
@@ -1087,71 +1237,72 @@ function Dashboard({ profile, userId, onSignOut }: {
           </div>
         )}
 
-        {/* Separator */}
-        {selected && (
-          <div className="h-px w-full" style={{ background: "color-mix(in srgb, var(--bt-led) 12%, transparent)" }} />
-        )}
-
-        {/* Riwayat 7 hari */}
-        {selected && (
-          <section className="flex flex-col gap-2.5">
-            <h2
-              className="text-xs font-semibold uppercase tracking-wider"
-              style={{ fontFamily: "var(--bt-font-display)", color: "var(--bt-led)", opacity: 0.6 }}
+        {/* Riwayat lintas pompa — hanya jika belum isi hari ini */}
+        {selected
+          && resultSummary[selected.id]?.statusTone !== "warn"
+          && riwayat.length > 0 && (
+          <section className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => setRiwayat7Open((v) => !v)}
+              className="flex items-center justify-between gap-2 py-1 text-left"
             >
-              Riwayat 7 hari — {selected.plat_lengkap}
-            </h2>
+              <span
+                className="text-xs font-semibold uppercase tracking-wider"
+                style={{ fontFamily: "var(--bt-font-display)", color: "var(--bt-led)", opacity: 0.6 }}
+              >
+                Riwayat pompa lain · 7 hari
+              </span>
+              <span className="text-[10px] uppercase tracking-wider text-white/45">
+                {riwayat7Open ? "Tutup" : `Buka (${riwayat.length})`}
+              </span>
+            </button>
 
-            {riwayatLoading ? (
-              <div className="flex justify-center py-6">
-                <Loader2 className="size-5 animate-spin" style={{ color: "var(--bt-led)" }} />
+            {riwayat7Open ? (
+              <div className="flex flex-col gap-2">
+                {riwayatLoading ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="size-5 animate-spin" style={{ color: "var(--bt-led)" }} />
+                  </div>
+                ) : (
+                  riwayat.map((r) => (
+                    <Card key={r.id} className="border-0 shadow-none rounded-lg" style={{ background: "#242424" }}>
+                      <CardContent className="flex items-center justify-between px-4 py-3 gap-3">
+                        <p className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+                          {r.waktu} · {r.spbu_nama}
+                        </p>
+                        <div className="text-right flex flex-col items-end gap-1">
+                          <p
+                            className="text-sm font-bold"
+                            style={{
+                              fontFamily: "var(--bt-font-display)",
+                              color: r.jenis === "tolak" ? "#E8384F" : "var(--bt-led)",
+                            }}
+                          >
+                            {r.jenis === "tolak" ? (r.catatan ? `TOLAK · ${r.catatan}` : "TOLAK") : `${r.liter} L`}
+                          </p>
+                          <span
+                            className="text-[10px] font-medium px-2 py-0.5 rounded"
+                            style={{
+                              background: r.jenis === "tolak"
+                                ? "color-mix(in srgb, var(--bt-merah) 20%, transparent)"
+                                : r.bbm === "Pertamax"
+                                  ? "color-mix(in srgb, var(--bt-biru) 20%, transparent)"
+                                  : "color-mix(in srgb, var(--bt-hijau) 20%, transparent)",
+                              color: r.jenis === "tolak"
+                                ? "var(--bt-merah-muda)"
+                                : r.bbm === "Pertamax" ? "var(--bt-biru)" : "var(--bt-hijau)",
+                            }}
+                          >
+                            {r.bbm}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
-            ) : riwayat.length === 0 ? (
-              <p className="text-sm py-4 text-center" style={{ color: "rgba(255,255,255,0.4)" }}>
-                Belum ada riwayat
-              </p>
-            ) : (
-              riwayat.map((r) => (
-                <Card key={r.id} className="border-0 shadow-none rounded-lg" style={{ background: "#242424" }}>
-                  <CardContent className="flex items-center justify-between px-4 py-3">
-                    <div>
-                      <p
-                        className="text-base font-bold tracking-wider text-white"
-                        style={{ fontFamily: "var(--bt-font-display)", fontVariantNumeric: "tabular-nums" }}
-                      >
-                        {r.plat_lengkap}
-                      </p>
-                      <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
-                        {r.waktu} · {r.spbu_nama}
-                      </p>
-                    </div>
-                    <div className="text-right flex flex-col items-end gap-1">
-                      <p
-                        className="text-sm font-bold"
-                        style={{ fontFamily: "var(--bt-font-display)", color: r.jenis === "tolak" ? "#E8384F" : "var(--bt-led)" }}
-                      >
-                        {r.jenis === "tolak" ? (r.catatan ? `TOLAK · ${r.catatan}` : "TOLAK") : `${r.liter} L`}
-                      </p>
-                      <span
-                        className="text-[10px] font-medium px-2 py-0.5 rounded"
-                        style={{
-                          background: r.jenis === "tolak"
-                            ? "color-mix(in srgb, var(--bt-merah) 20%, transparent)"
-                            : r.bbm === "Pertamax"
-                              ? "color-mix(in srgb, var(--bt-biru) 20%, transparent)"
-                              : "color-mix(in srgb, var(--bt-hijau) 20%, transparent)",
-                          color: r.jenis === "tolak"
-                            ? "var(--bt-merah-muda)"
-                            : r.bbm === "Pertamax" ? "var(--bt-biru)" : "var(--bt-hijau)",
-                        }}
-                      >
-                        {r.bbm}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
+            ) : null}
           </section>
         )}
 

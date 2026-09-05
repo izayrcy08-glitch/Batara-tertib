@@ -82,6 +82,18 @@ node supabase/seed-users.mjs
 
 Sandi default: `Batara123!`
 
+## Seed demo 6 bulan + PDF kredensial
+
+Hapus data operasional (`aduan`, `tolakan`, `transaksi`, `kendaraan` + objek Storage aduan), **tanpa** menyentuh SPBU/Auth. Lalu isi ~183 hari transaksi Pertalite & Pertamax (~3000 L/hari masing-masing) dan tulis PDF login.
+
+```sh
+node supabase/seed-demo-6bulan.mjs
+# hanya regenerate PDF tanpa wipe/seed:
+node supabase/seed-demo-6bulan.mjs --pdf-only
+```
+
+Output: `supabase/kredensial-login.pdf` (di-gitignore; berisi email + sandi default). URL situs di PDF: `https://batara-tertib.bataratertib.workers.dev` dan `/pom/`.
+
 ## Tabel inti
 
 | Tabel | Fungsi |

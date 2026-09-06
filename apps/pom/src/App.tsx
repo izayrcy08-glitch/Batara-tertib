@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Fuel, ShieldX, LogOut, Search, Loader2, Plus, MessageSquareWarning } from "lucide-react"
 import { Button } from "@batara/ui/components/ui/button"
 import { Input } from "@batara/ui/components/ui/input"
@@ -171,15 +171,19 @@ function Dashboard({ profile, userId, onSignOut }: {
 
   const PRODUK_BBM = ["Pertalite", "Pertamax"] as const
 
-  function handleStokChange(kondisi: SpbuStok) {
+  const handleStokChange = useCallback((kondisi: SpbuStok) => {
     setStokPertalite(kondisi.stok_pertalite)
     setStokPertamax(kondisi.stok_pertamax)
-    if (produk === "Pertalite" && kondisi.stok_pertalite === "kosong" && kondisi.stok_pertamax === "ada") {
-      setProduk("Pertamax")
-    } else if (produk === "Pertamax" && kondisi.stok_pertamax === "kosong" && kondisi.stok_pertalite === "ada") {
-      setProduk("Pertalite")
-    }
-  }
+    setProduk((prev) => {
+      if (prev === "Pertalite" && kondisi.stok_pertalite === "kosong" && kondisi.stok_pertamax === "ada") {
+        return "Pertamax"
+      }
+      if (prev === "Pertamax" && kondisi.stok_pertamax === "kosong" && kondisi.stok_pertalite === "ada") {
+        return "Pertalite"
+      }
+      return prev
+    })
+  }, [])
 
   function produkStokAda(p: string): boolean {
     if (p === "Pertalite") return stokPertalite === "ada"

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { requireSupabase } from "../lib/supabase"
@@ -27,6 +27,9 @@ export function KondisiSpbu({ spbuId, onStokChange }: Props) {
   const [kondisi, setKondisi] = useState<Kondisi | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  // Keep latest callback without re-fetching when parent re-renders (e.g. typing search).
+  const onStokChangeRef = useRef(onStokChange)
+  onStokChangeRef.current = onStokChange
 
   useEffect(() => {
     let cancelled = false
@@ -48,13 +51,13 @@ export function KondisiSpbu({ spbuId, onStokChange }: Props) {
         stok_pertamax: data.stok_pertamax as StokKondisi,
       }
       setKondisi(next)
-      onStokChange?.(next)
+      onStokChangeRef.current?.(next)
       setLoading(false)
     })()
     return () => {
       cancelled = true
     }
-  }, [spbuId, supabase, onStokChange])
+  }, [spbuId, supabase])
 
   async function save(next: Kondisi) {
     setSaving(true)

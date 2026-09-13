@@ -20,7 +20,7 @@ export default defineConfig({
         clientsClaim: true,
         skipWaiting: true,
       },
-      includeAssets: ["favicon.svg", "pwa-192.png", "pwa-512.png"],
+      includeAssets: ["favicon.png", "pwa-192.png", "pwa-512.png"],
       manifest: {
         lang: "id",
         name: "Batara Tertib — Petugas SPBU",

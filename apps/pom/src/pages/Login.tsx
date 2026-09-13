@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Fuel, Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@batara/ui/components/ui/button"
 import { Input } from "@batara/ui/components/ui/input"
 import { Label } from "@batara/ui/components/ui/label"
@@ -34,12 +34,11 @@ export function Login({ onLogin }: Props) {
       <div className="w-full max-w-sm flex flex-col gap-8">
         {/* Branding */}
         <div className="flex flex-col items-center gap-3">
-          <div
-            className="size-16 rounded-2xl flex items-center justify-center"
-            style={{ background: "var(--bt-merah)" }}
-          >
-            <Fuel className="size-8 text-white" strokeWidth={2.5} />
-          </div>
+          <img
+            src={`${import.meta.env.BASE_URL}logo.webp`}
+            alt="Batara Tertib"
+            className="size-20"
+          />
           <h1
             className="text-2xl font-bold tracking-wide uppercase text-white"
             style={{ fontFamily: "var(--bt-font-display)" }}

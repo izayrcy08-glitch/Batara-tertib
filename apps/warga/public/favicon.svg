@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Batara Tertib">
-  <rect width="64" height="64" rx="10" fill="#0F3D2E"/>
-  <rect x="10" y="18" width="44" height="28" rx="4" fill="#F3EFE4"/>
-  <text x="32" y="38" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="14" font-weight="700" fill="#161814">BT</text>
-  <rect x="14" y="48" width="36" height="4" rx="2" fill="#F0D35E"/>
-</svg>

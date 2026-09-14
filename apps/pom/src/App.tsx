@@ -94,6 +94,7 @@ function extractPlatFromOcrText(text: string): string | null {
 const OCR_CONFIDENCE_MIN = 60
 const SCAN_INTERVAL_MS = 700
 const SCAN_CONFIRM_STREAK = 2
+const SCAN_HINT_AFTER_MISSES = 8
 
 export function App() {
   if (!supabaseConfigured) {
@@ -173,7 +174,7 @@ function Dashboard({ profile, userId, onSignOut }: {
   const [daftarLoading, setDaftarLoading] = useState(false)
   const [cameraOpen, setCameraOpen] = useState(false)
   const [cameraMode, setCameraMode] = useState<"foto" | "scan">("foto")
-  const [scanStatus, setScanStatus] = useState<"arah" | "membaca">("arah")
+  const [scanStatus, setScanStatus] = useState<"arah" | "membaca" | "coba">("arah")
   const [showAduan, setShowAduan] = useState(false)
   const [aduanOpenCount, setAduanOpenCount] = useState(0)
   const [stokPertalite, setStokPertalite] = useState<"ada" | "kosong">("ada")
@@ -185,6 +186,8 @@ function Dashboard({ profile, userId, onSignOut }: {
   const ocrWorkerRef = useRef<Worker | null>(null)
   const ocrInFlightRef = useRef(false)
   const lastCandidateRef = useRef<{ plat: string; streak: number } | null>(null)
+  const missStreakRef = useRef(0)
+  const workerErrorShownRef = useRef(false)
 
   const PRODUK_BBM = ["Pertalite", "Pertamax"] as const
 
@@ -312,6 +315,8 @@ function Dashboard({ profile, userId, onSignOut }: {
     setScanStatus("arah")
     ocrInFlightRef.current = false
     lastCandidateRef.current = null
+    missStreakRef.current = 0
+    workerErrorShownRef.current = false
   }
 
   async function startCamera() {
@@ -366,11 +371,27 @@ function Dashboard({ profile, userId, onSignOut }: {
     ocrInFlightRef.current = true
     setScanStatus("membaca")
     try {
-      // Kotak panduan di video: 80% lebar, 28% tinggi, upper-middle — cocok rasio plat.
-      const cropW = video.videoWidth * 0.8
-      const cropH = video.videoHeight * 0.28
-      const cropX = (video.videoWidth - cropW) / 2
-      const cropY = video.videoHeight * 0.38 - cropH / 2
+      // Video ditampilkan pakai object-cover, jadi rasio native kamera hampir pasti beda
+      // dari rasio kotak di layar (full-screen potret) — skala+offset harus dihitung dulu
+      // supaya area yang di-crop untuk OCR sama persis dengan kotak kuning yang terlihat.
+      const rect = video.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) return
+      const scale = Math.max(rect.width / video.videoWidth, rect.height / video.videoHeight)
+      const scaledW = video.videoWidth * scale
+      const scaledH = video.videoHeight * scale
+      const offsetX = (scaledW - rect.width) / 2
+      const offsetY = (scaledH - rect.height) / 2
+
+      // Kotak panduan di layar: 80% lebar, 28% tinggi, upper-middle (top 24%-52% dari tinggi).
+      const boxLeft = rect.width * 0.1
+      const boxTop = rect.height * 0.24
+      const boxW = rect.width * 0.8
+      const boxH = rect.height * 0.28
+
+      const cropX = Math.max(0, (boxLeft + offsetX) / scale)
+      const cropY = Math.max(0, (boxTop + offsetY) / scale)
+      const cropW = Math.min(video.videoWidth - cropX, boxW / scale)
+      const cropH = Math.min(video.videoHeight - cropY, boxH / scale)
 
       // Crop + upscale 2x sekaligus — plat kecil di frame, upscale bantu OCR baca karakter.
       const canvas = document.createElement("canvas")
@@ -391,13 +412,21 @@ function Dashboard({ profile, userId, onSignOut }: {
       ctx.putImageData(imageData, 0, 0)
 
       if (!ocrWorkerRef.current) {
-        const { createWorker, PSM } = await import("tesseract.js")
-        const worker = await createWorker("eng")
-        await worker.setParameters({
-          tessedit_pageseg_mode: PSM.SINGLE_LINE,
-          tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ",
-        })
-        ocrWorkerRef.current = worker
+        try {
+          const { createWorker, PSM } = await import("tesseract.js")
+          const worker = await createWorker("eng")
+          await worker.setParameters({
+            tessedit_pageseg_mode: PSM.SINGLE_LINE,
+            tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ",
+          })
+          ocrWorkerRef.current = worker
+        } catch {
+          if (!workerErrorShownRef.current) {
+            workerErrorShownRef.current = true
+            toast.error("Gagal memuat mesin baca teks. Cek koneksi internet, lalu buka ulang kamera.")
+          }
+          return
+        }
       }
 
       const { data } = await ocrWorkerRef.current.recognize(canvas)
@@ -417,12 +446,15 @@ function Dashboard({ profile, userId, onSignOut }: {
         stopCamera()
         toast.success(`Plat terbaca: ${found} — cek lalu tekan cari`)
         document.getElementById("plat")?.focus()
+        return
       }
+
+      missStreakRef.current += 1
     } catch {
       // Miss per-tick tidak perlu toast — loop coba lagi tick berikutnya.
     } finally {
       ocrInFlightRef.current = false
-      setScanStatus("arah")
+      setScanStatus(missStreakRef.current >= SCAN_HINT_AFTER_MISSES ? "coba" : "arah")
     }
   }
 
@@ -1513,7 +1545,11 @@ function Dashboard({ profile, userId, onSignOut }: {
             className="h-12 shrink-0 flex items-center px-4 text-sm font-bold uppercase tracking-wider text-white"
             style={{ fontFamily: "var(--bt-font-display)", background: "#1E1E1E" }}
           >
-            {scanStatus === "membaca" ? "Membaca..." : "Arahkan ke plat..."}
+            {scanStatus === "membaca"
+              ? "Membaca..."
+              : scanStatus === "coba"
+                ? "Belum terbaca — dekatkan & terangi plat"
+                : "Arahkan ke plat..."}
           </div>
           <div className="relative flex-1">
             <video

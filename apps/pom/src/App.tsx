@@ -428,7 +428,10 @@ function Dashboard({ profile, userId, onSignOut }: {
             langPath: `${base}tessdata`,
           })
           await worker.setParameters({
-            tessedit_pageseg_mode: PSM.SINGLE_LINE,
+            // SINGLE_LINE ternyata terlalu kaku untuk huruf timbul plat (sedikit variasi
+            // tinggi/renggang antar karakter bikin gagal dianggap "satu baris rapi").
+            // SPARSE_TEXT cari teks di mana saja tanpa asumsi tata letak rapi.
+            tessedit_pageseg_mode: PSM.SPARSE_TEXT,
             tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ",
           })
           ocrWorkerRef.current = worker

@@ -453,7 +453,14 @@ function Dashboard({ profile, userId, onSignOut }: {
       if (!ocrWorkerRef.current) {
         try {
           const { createWorker, PSM } = await import("tesseract.js")
-          const worker = await createWorker("eng")
+          // File OCR (worker/core/data bahasa) di-host sendiri di public/ — bukan dari CDN
+          // pihak ketiga (jsdelivr) yang paling gampang gagal duluan di internet seluler lemah.
+          const base = import.meta.env.BASE_URL
+          const worker = await createWorker("eng", undefined, {
+            workerPath: `${base}tesseract/worker.min.js`,
+            corePath: `${base}tesseract/tesseract-core-lstm.wasm.js`,
+            langPath: `${base}tessdata`,
+          })
           await worker.setParameters({
             tessedit_pageseg_mode: PSM.SINGLE_LINE,
             tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ",

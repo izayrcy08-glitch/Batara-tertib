@@ -19,6 +19,9 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
+        // File OCR (worker/core/data bahasa) cuma dipakai kalau petugas buka scan plat —
+        // jangan dipaksa ikut precache install (~7 MB) buat semua orang.
+        globIgnores: ["tesseract/**", "tessdata/**"],
       },
       includeAssets: ["favicon.png", "pwa-192.png", "pwa-512.png"],
       manifest: {

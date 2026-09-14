@@ -91,10 +91,42 @@ function extractPlatFromOcrText(text: string): string | null {
   return normalizePlat(`${match[1]} ${match[2]} ${match[3]}`)
 }
 
-const OCR_CONFIDENCE_MIN = 60
+const OCR_CONFIDENCE_MIN = 45
 const SCAN_INTERVAL_MS = 700
 const SCAN_CONFIRM_STREAK = 2
 const SCAN_HINT_AFTER_MISSES = 8
+
+// Otsu's method — cari ambang hitam-putih otomatis dari histogram, bukan angka tetap.
+// Threshold tetap gampang rusak kalau cahaya lokasi (siang terik/mendung/malam) beda-beda.
+function otsuThreshold(gray: Uint8ClampedArray): number {
+  const histogram = new Array(256).fill(0)
+  for (let i = 0; i < gray.length; i++) histogram[gray[i]]++
+  const total = gray.length
+
+  let sum = 0
+  for (let t = 0; t < 256; t++) sum += t * histogram[t]
+
+  let sumB = 0
+  let wB = 0
+  let varMax = 0
+  let threshold = 127
+
+  for (let t = 0; t < 256; t++) {
+    wB += histogram[t]
+    if (wB === 0) continue
+    const wF = total - wB
+    if (wF === 0) break
+    sumB += t * histogram[t]
+    const mB = sumB / wB
+    const mF = (sum - sumB) / wF
+    const varBetween = wB * wF * (mB - mF) * (mB - mF)
+    if (varBetween > varMax) {
+      varMax = varBetween
+      threshold = t
+    }
+  }
+  return threshold
+}
 
 export function App() {
   if (!supabaseConfigured) {
@@ -175,6 +207,7 @@ function Dashboard({ profile, userId, onSignOut }: {
   const [cameraOpen, setCameraOpen] = useState(false)
   const [cameraMode, setCameraMode] = useState<"foto" | "scan">("foto")
   const [scanStatus, setScanStatus] = useState<"arah" | "membaca" | "coba">("arah")
+  const [lastOcrDebug, setLastOcrDebug] = useState("")
   const [showAduan, setShowAduan] = useState(false)
   const [aduanOpenCount, setAduanOpenCount] = useState(0)
   const [stokPertalite, setStokPertalite] = useState<"ada" | "kosong">("ada")
@@ -313,6 +346,7 @@ function Dashboard({ profile, userId, onSignOut }: {
     if (videoRef.current) videoRef.current.srcObject = null
     setCameraOpen(false)
     setScanStatus("arah")
+    setLastOcrDebug("")
     ocrInFlightRef.current = false
     lastCandidateRef.current = null
     missStreakRef.current = 0
@@ -401,12 +435,17 @@ function Dashboard({ profile, userId, onSignOut }: {
       if (!ctx) return
       ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height)
 
-      // Grayscale + threshold tetap — plat Indonesia kontras tinggi (hitam-putih).
+      // Grayscale, lalu threshold hitam-putih otomatis (Otsu) — menyesuaikan cahaya lokasi
+      // (siang terik/mendung/malam), bukan angka tetap yang gampang rusak di kondisi nyata.
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
       const d = imageData.data
-      for (let i = 0; i < d.length; i += 4) {
-        const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]
-        const v = gray > 140 ? 255 : 0
+      const grayVals = new Uint8ClampedArray(d.length / 4)
+      for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+        grayVals[j] = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]
+      }
+      const threshold = otsuThreshold(grayVals)
+      for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+        const v = grayVals[j] > threshold ? 255 : 0
         d[i] = d[i + 1] = d[i + 2] = v
       }
       ctx.putImageData(imageData, 0, 0)
@@ -430,6 +469,8 @@ function Dashboard({ profile, userId, onSignOut }: {
       }
 
       const { data } = await ocrWorkerRef.current.recognize(canvas)
+      const rawText = data.text.replace(/\s+/g, " ").trim()
+      setLastOcrDebug(`"${rawText || "(kosong)"}" · yakin ${Math.round(data.confidence)}%`)
       const plat = data.confidence >= OCR_CONFIDENCE_MIN ? extractPlatFromOcrText(data.text) : null
 
       if (plat && lastCandidateRef.current?.plat === plat) {
@@ -1541,15 +1582,22 @@ function Dashboard({ profile, userId, onSignOut }: {
 
       {cameraOpen && cameraMode === "scan" && (
         <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#000" }}>
-          <div
-            className="h-12 shrink-0 flex items-center px-4 text-sm font-bold uppercase tracking-wider text-white"
-            style={{ fontFamily: "var(--bt-font-display)", background: "#1E1E1E" }}
-          >
-            {scanStatus === "membaca"
-              ? "Membaca..."
-              : scanStatus === "coba"
-                ? "Belum terbaca — dekatkan & terangi plat"
-                : "Arahkan ke plat..."}
+          <div className="shrink-0 flex flex-col gap-0.5 px-4 py-2" style={{ background: "#1E1E1E" }}>
+            <span
+              className="text-sm font-bold uppercase tracking-wider text-white"
+              style={{ fontFamily: "var(--bt-font-display)" }}
+            >
+              {scanStatus === "membaca"
+                ? "Membaca..."
+                : scanStatus === "coba"
+                  ? "Belum terbaca — dekatkan & terangi plat"
+                  : "Arahkan ke plat..."}
+            </span>
+            {lastOcrDebug && (
+              <span className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
+                Terbaca: {lastOcrDebug}
+              </span>
+            )}
           </div>
           <div className="relative flex-1">
             <video

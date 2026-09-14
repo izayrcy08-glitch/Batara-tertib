@@ -91,8 +91,8 @@ function extractPlatFromOcrText(text: string): string | null {
   return normalizePlat(`${match[1]} ${match[2]} ${match[3]}`)
 }
 
-const OCR_CONFIDENCE_MIN = 45
 const SCAN_INTERVAL_MS = 700
+const OCR_UPSCALE = 3
 const SCAN_CONFIRM_STREAK = 2
 const SCAN_HINT_AFTER_MISSES = 8
 
@@ -362,7 +362,13 @@ function Dashboard({ profile, userId, onSignOut }: {
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
+        // Resolusi tinggi diminta (ideal, bukan wajib) — plat kecil di frame, makin tajam
+        // sumbernya makin banyak detail karakter yang bisa dibaca OCR.
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
         audio: false,
       })
       streamRef.current = stream
@@ -429,10 +435,10 @@ function Dashboard({ profile, userId, onSignOut }: {
       const cropW = Math.min(video.videoWidth - cropX, boxW / scale)
       const cropH = Math.min(video.videoHeight - cropY, boxH / scale)
 
-      // Crop + upscale 2x sekaligus — plat kecil di frame, upscale bantu OCR baca karakter.
+      // Crop + upscale sekaligus — plat kecil di frame, upscale bantu OCR baca karakter.
       const canvas = document.createElement("canvas")
-      canvas.width = cropW * 2
-      canvas.height = cropH * 2
+      canvas.width = cropW * OCR_UPSCALE
+      canvas.height = cropH * OCR_UPSCALE
       const ctx = canvas.getContext("2d")
       if (!ctx) return
       ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height)
@@ -481,7 +487,9 @@ function Dashboard({ profile, userId, onSignOut }: {
       const { data } = await ocrWorkerRef.current.recognize(canvas)
       const rawText = data.text.replace(/\s+/g, " ").trim()
       setLastOcrDebug(`"${rawText || "(kosong)"}" · yakin ${Math.round(data.confidence)}%`)
-      const plat = data.confidence >= OCR_CONFIDENCE_MIN ? extractPlatFromOcrText(data.text) : null
+      // Keyakinan Tesseract di foto plat lewat kamera HP wajar rendah (~40%) walau bacaannya
+      // sudah benar — jangan dibuang di sini, cukup andalkan pola format + 2x baca sama berturut-turut.
+      const plat = extractPlatFromOcrText(data.text)
 
       if (plat && lastCandidateRef.current?.plat === plat) {
         lastCandidateRef.current.streak += 1

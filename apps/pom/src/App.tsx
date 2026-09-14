@@ -208,6 +208,7 @@ function Dashboard({ profile, userId, onSignOut }: {
   const [cameraMode, setCameraMode] = useState<"foto" | "scan">("foto")
   const [scanStatus, setScanStatus] = useState<"arah" | "membaca" | "coba">("arah")
   const [lastOcrDebug, setLastOcrDebug] = useState("")
+  const [debugThumb, setDebugThumb] = useState("")
   const [showAduan, setShowAduan] = useState(false)
   const [aduanOpenCount, setAduanOpenCount] = useState(0)
   const [stokPertalite, setStokPertalite] = useState<"ada" | "kosong">("ada")
@@ -347,6 +348,7 @@ function Dashboard({ profile, userId, onSignOut }: {
     setCameraOpen(false)
     setScanStatus("arah")
     setLastOcrDebug("")
+    setDebugThumb("")
     ocrInFlightRef.current = false
     lastCandidateRef.current = null
     missStreakRef.current = 0
@@ -449,6 +451,7 @@ function Dashboard({ profile, userId, onSignOut }: {
         d[i] = d[i + 1] = d[i + 2] = v
       }
       ctx.putImageData(imageData, 0, 0)
+      setDebugThumb(canvas.toDataURL("image/png"))
 
       if (!ocrWorkerRef.current) {
         try {
@@ -1604,6 +1607,14 @@ function Dashboard({ profile, userId, onSignOut }: {
               <span className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
                 Terbaca: {lastOcrDebug}
               </span>
+            )}
+            {debugThumb && (
+              <img
+                src={debugThumb}
+                alt="Area yang dibaca OCR"
+                className="h-16 w-auto rounded border object-contain self-start"
+                style={{ borderColor: "rgba(255,255,255,0.3)", background: "#000" }}
+              />
             )}
           </div>
           <div className="relative flex-1">

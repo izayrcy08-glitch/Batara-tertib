@@ -32,6 +32,8 @@ export type Riwayat = {
   produk: string | null
   catatan: string | null
   created_at: string
+  user_id: string
+  petugas_label: string
 }
 export type RekapRow = {
   spbu_id: string
@@ -155,6 +157,25 @@ export async function loadKendaraan(q: string, offset: number): Promise<Kendaraa
   return data ?? []
 }
 
+async function loadPetugasLabelMap(): Promise<Record<string, string>> {
+  const { data, error } = await sb()
+    .from("profiles")
+    .select("id, spbu_id, created_at")
+    .eq("role", "petugas")
+    .order("spbu_id", { ascending: true })
+    .order("created_at", { ascending: true })
+  if (error || !data) return {}
+
+  const map: Record<string, string> = {}
+  const urutan: Record<string, number> = {}
+  for (const p of data) {
+    const key = p.spbu_id ?? "-"
+    urutan[key] = (urutan[key] ?? 0) + 1
+    map[p.id] = `Petugas ${String(urutan[key]).padStart(2, "0")}`
+  }
+  return map
+}
+
 export async function loadRiwayat(opts: {
   from: string
   to: string
@@ -166,7 +187,7 @@ export async function loadRiwayat(opts: {
 
   let trxQuery = sb()
     .from("transaksi")
-    .select("id, kendaraan_id, spbu_id, liter, produk, created_at, kendaraan:kendaraan_id(plat_lengkap), spbu:spbu_id(nama)")
+    .select("id, kendaraan_id, spbu_id, user_id, liter, produk, created_at, kendaraan:kendaraan_id(plat_lengkap), spbu:spbu_id(nama)")
     .gte("created_at", from)
     .lte("created_at", to)
     .order("created_at", { ascending: false })
@@ -174,7 +195,7 @@ export async function loadRiwayat(opts: {
 
   let tolakQuery = sb()
     .from("tolakan")
-    .select("id, kendaraan_id, spbu_id, catatan, alasan, created_at, kendaraan:kendaraan_id(plat_lengkap), spbu:spbu_id(nama)")
+    .select("id, kendaraan_id, spbu_id, user_id, catatan, alasan, created_at, kendaraan:kendaraan_id(plat_lengkap), spbu:spbu_id(nama)")
     .gte("created_at", from)
     .lte("created_at", to)
     .order("created_at", { ascending: false })
@@ -185,7 +206,7 @@ export async function loadRiwayat(opts: {
     tolakQuery = tolakQuery.eq("spbu_id", opts.spbuId)
   }
 
-  const [trx, tolak] = await Promise.all([trxQuery, tolakQuery])
+  const [trx, tolak, petugasLabel] = await Promise.all([trxQuery, tolakQuery, loadPetugasLabelMap()])
   if (trx.error) throw trx.error
   if (tolak.error) throw tolak.error
 
@@ -210,6 +231,8 @@ export async function loadRiwayat(opts: {
       produk: t.produk,
       catatan: null,
       created_at: t.created_at,
+      user_id: t.user_id,
+      petugas_label: petugasLabel[t.user_id] ?? "-",
     })),
     ...(tolak.data ?? []).map((t) => ({
       id: t.id,
@@ -222,6 +245,8 @@ export async function loadRiwayat(opts: {
       produk: null,
       catatan: labelAlasanTolak(t.alasan, t.catatan),
       created_at: t.created_at,
+      user_id: t.user_id,
+      petugas_label: petugasLabel[t.user_id] ?? "-",
     })),
   ]
 

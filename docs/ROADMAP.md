@@ -38,6 +38,7 @@ Kulit: header fascia + konten `max-w-md` + kartu struk krem + aksi di bawah data
 - [x] Kelola user: Edge Function `admin-users` deploy 2026-08-21; tambah/edit/sandi/nonaktif/hapus jalan dari panel
 - [x] Lihat semua kendaraan; edit plat; hapus (hanya jika belum ada riwayat)
 - [x] Lihat riwayat pengisian semua SPBU (filter tanggal + SPBU + plat); edit dan hapus
+- [x] Riwayat tampilkan label akun petugas yang input ("Petugas 01"/"Petugas 02", urut per SPBU berdasar akun dibuat) — bukan nama asli, jadi tidak perlu rename akun lama
 - [x] Laporan total liter BBM per jenis per SPBU (filter rentang tanggal, satu/semua SPBU, Pertalite/Pertamax/keduanya)
 - [x] Sembunyikan aduan melanggar — tab Aduan (admin)
 

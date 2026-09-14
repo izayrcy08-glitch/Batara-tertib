@@ -729,6 +729,7 @@ function TabRiwayat({ spbu }: { spbu: Spbu[] }) {
             <p className="text-xs mt-0.5" style={{ color: "color-mix(in srgb, var(--bt-tinta) 50%, transparent)" }}>
               {new Date(r.created_at).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
               {" · "}{r.spbu_nama}
+              {" · "}{r.petugas_label}
             </p>
             <ActionRow>
               <TextAction

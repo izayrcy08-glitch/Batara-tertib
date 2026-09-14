@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react"
-import { Fuel, ShieldX, LogOut, Search, Loader2, Plus, MessageSquareWarning } from "lucide-react"
+import { Fuel, ShieldX, LogOut, Search, Loader2, Plus, MessageSquareWarning, Camera } from "lucide-react"
+import type { Worker } from "tesseract.js"
 import { Button } from "@batara/ui/components/ui/button"
 import { Input } from "@batara/ui/components/ui/input"
 import { Label } from "@batara/ui/components/ui/label"
@@ -83,6 +84,13 @@ function normalizePlat(input: string): string | null {
   return null
 }
 
+function extractPlatFromOcrText(text: string): string | null {
+  const cleaned = text.toUpperCase().replace(/[^A-Z0-9\s]/g, " ")
+  const match = cleaned.match(/([A-Z]{1,2})\s*(\d{1,4})\s*([A-Z]{1,3})/)
+  if (!match) return null
+  return normalizePlat(`${match[1]} ${match[2]} ${match[3]}`)
+}
+
 export function App() {
   if (!supabaseConfigured) {
     return (
@@ -160,6 +168,8 @@ function Dashboard({ profile, userId, onSignOut }: {
   const [fotoKendaraan, setFotoKendaraan] = useState<File | null>(null)
   const [daftarLoading, setDaftarLoading] = useState(false)
   const [cameraOpen, setCameraOpen] = useState(false)
+  const [cameraMode, setCameraMode] = useState<"foto" | "scan">("foto")
+  const [scanning, setScanning] = useState(false)
   const [showAduan, setShowAduan] = useState(false)
   const [aduanOpenCount, setAduanOpenCount] = useState(0)
   const [stokPertalite, setStokPertalite] = useState<"ada" | "kosong">("ada")
@@ -168,6 +178,7 @@ function Dashboard({ profile, userId, onSignOut }: {
   const galleryInputRef = useRef<HTMLInputElement | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const ocrWorkerRef = useRef<Worker | null>(null)
 
   const PRODUK_BBM = ["Pertalite", "Pertamax"] as const
 
@@ -292,6 +303,7 @@ function Dashboard({ profile, userId, onSignOut }: {
     streamRef.current = null
     if (videoRef.current) videoRef.current.srcObject = null
     setCameraOpen(false)
+    setScanning(false)
   }
 
   async function startCamera() {
@@ -309,6 +321,11 @@ function Dashboard({ profile, userId, onSignOut }: {
     } catch {
       toast.error("Izin kamera ditolak. Izinkan kamera di browser, lalu coba lagi.")
     }
+  }
+
+  function startScanPlat() {
+    setCameraMode("scan")
+    void startCamera()
   }
 
   function capturePhoto() {
@@ -334,6 +351,54 @@ function Dashboard({ profile, userId, onSignOut }: {
     }, "image/jpeg", 0.85)
   }
 
+  async function capturePlatFrame() {
+    const video = videoRef.current
+    if (!video || video.videoWidth === 0) {
+      toast.error("Kamera belum siap")
+      return
+    }
+    setScanning(true)
+    try {
+      // Kotak panduan di video: 80% lebar, 28% tinggi, di tengah — cocok rasio plat.
+      const cropW = video.videoWidth * 0.8
+      const cropH = video.videoHeight * 0.28
+      const cropX = (video.videoWidth - cropW) / 2
+      const cropY = (video.videoHeight - cropH) / 2
+
+      const canvas = document.createElement("canvas")
+      canvas.width = cropW
+      canvas.height = cropH
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
+      ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH)
+
+      if (!ocrWorkerRef.current) {
+        const { createWorker } = await import("tesseract.js")
+        const worker = await createWorker("eng")
+        await worker.setParameters({
+          tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ",
+        })
+        ocrWorkerRef.current = worker
+      }
+
+      const { data } = await ocrWorkerRef.current.recognize(canvas)
+      const plat = extractPlatFromOcrText(data.text)
+
+      if (plat) {
+        setQuery(plat)
+        stopCamera()
+        toast.success(`Plat terbaca: ${plat} — cek lalu tekan cari`)
+        document.getElementById("plat")?.focus()
+      } else {
+        toast.error("Plat tidak terbaca jelas. Dekatkan/terangi, lalu coba lagi")
+      }
+    } catch {
+      toast.error("Gagal membaca plat. Coba lagi.")
+    } finally {
+      setScanning(false)
+    }
+  }
+
   useEffect(() => {
     if (!cameraOpen || !streamRef.current || !videoRef.current) return
     videoRef.current.srcObject = streamRef.current
@@ -343,6 +408,7 @@ function Dashboard({ profile, userId, onSignOut }: {
   useEffect(() => {
     return () => {
       streamRef.current?.getTracks().forEach((t) => t.stop())
+      void ocrWorkerRef.current?.terminate()
     }
   }, [])
 
@@ -818,6 +884,27 @@ function Dashboard({ profile, userId, onSignOut }: {
               )}
             </button>
           </div>
+          <label
+            className="text-xs uppercase tracking-wider font-medium"
+            style={{ fontFamily: "var(--bt-font-display)", color: "var(--bt-led)", opacity: 0.7 }}
+          >
+            Scan nomor plat kendaraan
+          </label>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={startScanPlat}
+            className="h-11 w-full text-sm font-bold uppercase tracking-wider hover:bg-[color-mix(in_srgb,var(--bt-led)_14%,transparent)] hover:text-[var(--bt-led)]"
+            style={{
+              fontFamily: "var(--bt-font-display)",
+              borderColor: "color-mix(in srgb, var(--bt-led) 35%, transparent)",
+              color: "var(--bt-led)",
+              background: "color-mix(in srgb, var(--bt-led) 8%, transparent)",
+            }}
+          >
+            <Camera className="size-4" />
+            Scan Plat
+          </Button>
           <Button
             type="button"
             variant="outline"
@@ -882,7 +969,10 @@ function Dashboard({ profile, userId, onSignOut }: {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => void startCamera()}
+                  onClick={() => {
+                    setCameraMode("foto")
+                    void startCamera()
+                  }}
                   className="h-12 rounded-md border-2 flex items-center justify-center px-3 cursor-pointer text-sm font-semibold transition-all active:scale-[0.99]"
                   style={{
                     fontFamily: "var(--bt-font-display)",
@@ -1397,23 +1487,33 @@ function Dashboard({ profile, userId, onSignOut }: {
               className="text-lg font-bold uppercase tracking-wider text-white"
               style={{ fontFamily: "var(--bt-font-display)" }}
             >
-              Kamera
+              {cameraMode === "scan" ? "Pindai Plat" : "Kamera"}
             </h3>
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full rounded-xl bg-black aspect-[4/3] object-cover"
-            />
+            <div className="relative">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full rounded-xl bg-black aspect-[4/3] object-cover"
+              />
+              {cameraMode === "scan" && (
+                <div
+                  className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[28%] rounded-lg border-2"
+                  style={{ borderColor: "var(--bt-led)" }}
+                />
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={capturePhoto}
-                className="h-12 rounded-xl text-sm font-bold uppercase tracking-wider text-white"
+                onClick={cameraMode === "scan" ? capturePlatFrame : capturePhoto}
+                disabled={scanning}
+                className="h-12 rounded-xl text-sm font-bold uppercase tracking-wider text-white flex items-center justify-center gap-2"
                 style={{ fontFamily: "var(--bt-font-display)", background: "var(--bt-hijau)" }}
               >
-                Ambil
+                {scanning && <Loader2 className="size-4 animate-spin" />}
+                {cameraMode === "scan" ? (scanning ? "Membaca..." : "Pindai") : "Ambil"}
               </button>
               <button
                 type="button"

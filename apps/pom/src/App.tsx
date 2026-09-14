@@ -96,38 +96,6 @@ const OCR_UPSCALE = 3
 const SCAN_CONFIRM_STREAK = 2
 const SCAN_HINT_AFTER_MISSES = 8
 
-// Otsu's method — cari ambang hitam-putih otomatis dari histogram, bukan angka tetap.
-// Threshold tetap gampang rusak kalau cahaya lokasi (siang terik/mendung/malam) beda-beda.
-function otsuThreshold(gray: Uint8ClampedArray): number {
-  const histogram = new Array(256).fill(0)
-  for (let i = 0; i < gray.length; i++) histogram[gray[i]]++
-  const total = gray.length
-
-  let sum = 0
-  for (let t = 0; t < 256; t++) sum += t * histogram[t]
-
-  let sumB = 0
-  let wB = 0
-  let varMax = 0
-  let threshold = 127
-
-  for (let t = 0; t < 256; t++) {
-    wB += histogram[t]
-    if (wB === 0) continue
-    const wF = total - wB
-    if (wF === 0) break
-    sumB += t * histogram[t]
-    const mB = sumB / wB
-    const mF = (sum - sumB) / wF
-    const varBetween = wB * wF * (mB - mF) * (mB - mF)
-    if (varBetween > varMax) {
-      varMax = varBetween
-      threshold = t
-    }
-  }
-  return threshold
-}
-
 export function App() {
   if (!supabaseConfigured) {
     return (
@@ -443,20 +411,9 @@ function Dashboard({ profile, userId, onSignOut }: {
       if (!ctx) return
       ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height)
 
-      // Grayscale, lalu threshold hitam-putih otomatis (Otsu) — menyesuaikan cahaya lokasi
-      // (siang terik/mendung/malam), bukan angka tetap yang gampang rusak di kondisi nyata.
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      const d = imageData.data
-      const grayVals = new Uint8ClampedArray(d.length / 4)
-      for (let i = 0, j = 0; i < d.length; i += 4, j++) {
-        grayVals[j] = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]
-      }
-      const threshold = otsuThreshold(grayVals)
-      for (let i = 0, j = 0; i < d.length; i += 4, j++) {
-        const v = grayVals[j] > threshold ? 255 : 0
-        d[i] = d[i + 1] = d[i + 2] = v
-      }
-      ctx.putImageData(imageData, 0, 0)
+      // Tidak diubah jadi hitam-putih paksa (threshold) lagi — Tesseract sendiri sudah
+      // punya penyesuaian cahaya per-area yang jauh lebih baik dari satu angka ambang
+      // global, apalagi kalau pencahayaan plat tidak rata (separuh silau, separuh teduh).
       setDebugThumb(canvas.toDataURL("image/png"))
 
       if (!ocrWorkerRef.current) {

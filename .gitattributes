@@ -1,9 +1,0 @@
-*.wasm binary
-*.gz binary
-*.woff binary
-*.woff2 binary
-*.png binary
-*.jpg binary
-*.jpeg binary
-*.ico binary
-apps/pom/public/tesseract/* binary

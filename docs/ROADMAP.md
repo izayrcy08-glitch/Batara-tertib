@@ -83,21 +83,15 @@ Petugas update manual di pompa sendiri; warga lihat live (bukan cache build).
 - **DB:** kolom stok di `spbu` + RPC `set_kondisi_spbu` (petugas → SPBU sendiri).
 - Bukan: antrian manual, stok liter persis, produk selain Pertalite/Pertamax.
 
-## V4 — Scan plat kamera
-
-Petugas arahkan kamera ke plat, teks terbaca dan mengisi kotak cari — bukan auto-search, petugas tetap cek lalu tekan cari.
-
-- Tombol kamera di sebelah kotak "Cari plat kendaraan" (`/pom`), buka viewfinder kamera belakang (pakai ulang `getUserMedia` yang sudah ada untuk foto kendaraan).
-- OCR sisi klien (Tesseract.js) baca teks dari foto yang diambil petugas (tap "Pindai").
-- Hasil OCR yang cocok pola plat → isi kotak cari otomatis (dinormalisasi, format `XX 1234 XXX`), kamera tertutup, petugas tekan cari.
-- Gagal terbaca / tidak cocok pola → toast minta ulangi, kamera tetap terbuka; input manual tetap fallback utama.
-- Bukan bagian slice ini: OCR offline penuh (self-host model di `public/`), auto-search tanpa konfirmasi, deteksi live tiap frame (hanya per-tap capture).
-
 ## Bukan V1
 
 ANPR, MyPertamina, Samsat, native store, keuangan, CMS, peta GIS, kuota liter per jenis.
 
-Catatan: ANPR di atas konteksnya V1 (2026-08). Sekarang ada slice V4 terbatas — OCR lokal + isi kotak cari manual, bukan ANPR penuh terintegrasi Samsat/MyPertamina.
+Catatan (2026-09): Scan plat kamera (OCR Tesseract.js client-side) dicoba sebagai slice V4,
+lalu dicabut — akurasi baca plat timbul Indonesia tidak cukup andal/cepat untuk dipakai di
+lapangan walau sudah banyak diperbaiki (posisi crop, resolusi, threshold, mode baca). Kalau
+mau dicoba lagi, pertimbangkan OCR berbayar khusus plat (mis. Plate Recognizer/Google Vision)
+alih-alih OCR gratis generik — butuh API key + proxy server, bukan sekadar ganti library.
 
 ---
 

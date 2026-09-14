@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react"
-import { Fuel, ShieldX, LogOut, Search, Loader2, Plus, MessageSquareWarning, Camera } from "lucide-react"
-import type { Worker } from "tesseract.js"
+import { Fuel, ShieldX, LogOut, Search, Loader2, Plus, MessageSquareWarning } from "lucide-react"
 import { Button } from "@batara/ui/components/ui/button"
 import { Input } from "@batara/ui/components/ui/input"
 import { Label } from "@batara/ui/components/ui/label"
@@ -84,18 +83,6 @@ function normalizePlat(input: string): string | null {
   return null
 }
 
-function extractPlatFromOcrText(text: string): string | null {
-  const cleaned = text.toUpperCase().replace(/[^A-Z0-9\s]/g, " ")
-  const match = cleaned.match(/([A-Z]{1,2})\s*(\d{1,4})\s*([A-Z]{1,3})/)
-  if (!match) return null
-  return normalizePlat(`${match[1]} ${match[2]} ${match[3]}`)
-}
-
-const SCAN_INTERVAL_MS = 700
-const OCR_UPSCALE = 3
-const SCAN_CONFIRM_STREAK = 2
-const SCAN_HINT_AFTER_MISSES = 8
-
 export function App() {
   if (!supabaseConfigured) {
     return (
@@ -173,10 +160,6 @@ function Dashboard({ profile, userId, onSignOut }: {
   const [fotoKendaraan, setFotoKendaraan] = useState<File | null>(null)
   const [daftarLoading, setDaftarLoading] = useState(false)
   const [cameraOpen, setCameraOpen] = useState(false)
-  const [cameraMode, setCameraMode] = useState<"foto" | "scan">("foto")
-  const [scanStatus, setScanStatus] = useState<"arah" | "membaca" | "coba">("arah")
-  const [lastOcrDebug, setLastOcrDebug] = useState("")
-  const [debugThumb, setDebugThumb] = useState("")
   const [showAduan, setShowAduan] = useState(false)
   const [aduanOpenCount, setAduanOpenCount] = useState(0)
   const [stokPertalite, setStokPertalite] = useState<"ada" | "kosong">("ada")
@@ -185,11 +168,6 @@ function Dashboard({ profile, userId, onSignOut }: {
   const galleryInputRef = useRef<HTMLInputElement | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const ocrWorkerRef = useRef<Worker | null>(null)
-  const ocrInFlightRef = useRef(false)
-  const lastCandidateRef = useRef<{ plat: string; streak: number } | null>(null)
-  const missStreakRef = useRef(0)
-  const workerErrorShownRef = useRef(false)
 
   const PRODUK_BBM = ["Pertalite", "Pertamax"] as const
 
@@ -314,13 +292,6 @@ function Dashboard({ profile, userId, onSignOut }: {
     streamRef.current = null
     if (videoRef.current) videoRef.current.srcObject = null
     setCameraOpen(false)
-    setScanStatus("arah")
-    setLastOcrDebug("")
-    setDebugThumb("")
-    ocrInFlightRef.current = false
-    lastCandidateRef.current = null
-    missStreakRef.current = 0
-    workerErrorShownRef.current = false
   }
 
   async function startCamera() {
@@ -330,13 +301,7 @@ function Dashboard({ profile, userId, onSignOut }: {
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        // Resolusi tinggi diminta (ideal, bukan wajib) — plat kecil di frame, makin tajam
-        // sumbernya makin banyak detail karakter yang bisa dibaca OCR.
-        video: {
-          facingMode: { ideal: "environment" },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-        },
+        video: { facingMode: { ideal: "environment" } },
         audio: false,
       })
       streamRef.current = stream
@@ -344,11 +309,6 @@ function Dashboard({ profile, userId, onSignOut }: {
     } catch {
       toast.error("Izin kamera ditolak. Izinkan kamera di browser, lalu coba lagi.")
     }
-  }
-
-  function startScanPlat() {
-    setCameraMode("scan")
-    void startCamera()
   }
 
   function capturePhoto() {
@@ -374,109 +334,6 @@ function Dashboard({ profile, userId, onSignOut }: {
     }, "image/jpeg", 0.85)
   }
 
-  async function attemptPlatScan() {
-    const video = videoRef.current
-    if (!video || video.videoWidth === 0 || ocrInFlightRef.current) return
-
-    ocrInFlightRef.current = true
-    setScanStatus("membaca")
-    try {
-      // Video ditampilkan pakai object-cover, jadi rasio native kamera hampir pasti beda
-      // dari rasio kotak di layar (full-screen potret) — skala+offset harus dihitung dulu
-      // supaya area yang di-crop untuk OCR sama persis dengan kotak kuning yang terlihat.
-      const rect = video.getBoundingClientRect()
-      if (rect.width === 0 || rect.height === 0) return
-      const scale = Math.max(rect.width / video.videoWidth, rect.height / video.videoHeight)
-      const scaledW = video.videoWidth * scale
-      const scaledH = video.videoHeight * scale
-      const offsetX = (scaledW - rect.width) / 2
-      const offsetY = (scaledH - rect.height) / 2
-
-      // Kotak panduan di layar: 80% lebar, 28% tinggi, upper-middle (top 24%-52% dari tinggi).
-      const boxLeft = rect.width * 0.1
-      const boxTop = rect.height * 0.24
-      const boxW = rect.width * 0.8
-      const boxH = rect.height * 0.28
-
-      const cropX = Math.max(0, (boxLeft + offsetX) / scale)
-      const cropY = Math.max(0, (boxTop + offsetY) / scale)
-      const cropW = Math.min(video.videoWidth - cropX, boxW / scale)
-      const cropH = Math.min(video.videoHeight - cropY, boxH / scale)
-
-      // Crop + upscale sekaligus — plat kecil di frame, upscale bantu OCR baca karakter.
-      const canvas = document.createElement("canvas")
-      canvas.width = cropW * OCR_UPSCALE
-      canvas.height = cropH * OCR_UPSCALE
-      const ctx = canvas.getContext("2d")
-      if (!ctx) return
-      ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height)
-
-      // Tidak diubah jadi hitam-putih paksa (threshold) lagi — Tesseract sendiri sudah
-      // punya penyesuaian cahaya per-area yang jauh lebih baik dari satu angka ambang
-      // global, apalagi kalau pencahayaan plat tidak rata (separuh silau, separuh teduh).
-      setDebugThumb(canvas.toDataURL("image/png"))
-
-      if (!ocrWorkerRef.current) {
-        try {
-          const { createWorker, PSM } = await import("tesseract.js")
-          // File OCR (worker/core/data bahasa) di-host sendiri di public/ — bukan dari CDN
-          // pihak ketiga (jsdelivr) yang paling gampang gagal duluan di internet seluler lemah.
-          const base = import.meta.env.BASE_URL
-          const worker = await createWorker("eng", undefined, {
-            workerPath: `${base}tesseract/worker.min.js`,
-            corePath: `${base}tesseract/tesseract-core-lstm.wasm.js`,
-            langPath: `${base}tessdata`,
-          })
-          await worker.setParameters({
-            // SINGLE_LINE terlalu kaku (sering kosong/kurang), SPARSE_TEXT terlalu longgar
-            // (ikut nangkep noise jadi karakter tambahan). SINGLE_BLOCK: tetap anggap teks
-            // terstruktur tapi tidak sekaku "harus persis satu baris rapi".
-            tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
-            tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ",
-          })
-          ocrWorkerRef.current = worker
-        } catch {
-          if (!workerErrorShownRef.current) {
-            workerErrorShownRef.current = true
-            toast.error("Gagal memuat mesin baca teks. Cek koneksi internet, lalu buka ulang kamera.")
-          }
-          return
-        }
-      }
-
-      const { data } = await ocrWorkerRef.current.recognize(canvas)
-      const rawText = data.text.replace(/\s+/g, " ").trim()
-      setLastOcrDebug(`"${rawText || "(kosong)"}" · yakin ${Math.round(data.confidence)}%`)
-      // Keyakinan Tesseract di foto plat lewat kamera HP wajar rendah (~40%) walau bacaannya
-      // sudah benar — jangan dibuang di sini, cukup andalkan pola format + 2x baca sama berturut-turut.
-      const plat = extractPlatFromOcrText(data.text)
-
-      if (plat && lastCandidateRef.current?.plat === plat) {
-        lastCandidateRef.current.streak += 1
-      } else if (plat) {
-        lastCandidateRef.current = { plat, streak: 1 }
-      } else {
-        lastCandidateRef.current = null
-      }
-
-      if (lastCandidateRef.current && lastCandidateRef.current.streak >= SCAN_CONFIRM_STREAK) {
-        const found = lastCandidateRef.current.plat
-        setQuery(found)
-        stopCamera()
-        toast.success(`Plat terbaca: ${found} — cek lalu tekan cari`)
-        document.getElementById("plat")?.focus()
-        return
-      }
-
-      missStreakRef.current += 1
-    } catch {
-      // Miss per-tick tidak perlu toast — loop coba lagi tick berikutnya.
-    } finally {
-      ocrInFlightRef.current = false
-      setScanStatus(missStreakRef.current >= SCAN_HINT_AFTER_MISSES ? "coba" : "arah")
-    }
-  }
-
   useEffect(() => {
     if (!cameraOpen || !streamRef.current || !videoRef.current) return
     videoRef.current.srcObject = streamRef.current
@@ -484,15 +341,8 @@ function Dashboard({ profile, userId, onSignOut }: {
   }, [cameraOpen])
 
   useEffect(() => {
-    if (!cameraOpen || cameraMode !== "scan") return
-    const id = window.setInterval(() => { void attemptPlatScan() }, SCAN_INTERVAL_MS)
-    return () => window.clearInterval(id)
-  }, [cameraOpen, cameraMode])
-
-  useEffect(() => {
     return () => {
       streamRef.current?.getTracks().forEach((t) => t.stop())
-      void ocrWorkerRef.current?.terminate()
     }
   }, [])
 
@@ -968,27 +818,6 @@ function Dashboard({ profile, userId, onSignOut }: {
               )}
             </button>
           </div>
-          <label
-            className="text-xs uppercase tracking-wider font-medium"
-            style={{ fontFamily: "var(--bt-font-display)", color: "var(--bt-led)", opacity: 0.7 }}
-          >
-            Scan nomor plat kendaraan
-          </label>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={startScanPlat}
-            className="h-11 w-full text-sm font-bold uppercase tracking-wider hover:bg-[color-mix(in_srgb,var(--bt-led)_14%,transparent)] hover:text-[var(--bt-led)]"
-            style={{
-              fontFamily: "var(--bt-font-display)",
-              borderColor: "color-mix(in srgb, var(--bt-led) 35%, transparent)",
-              color: "var(--bt-led)",
-              background: "color-mix(in srgb, var(--bt-led) 8%, transparent)",
-            }}
-          >
-            <Camera className="size-4" />
-            Scan Plat
-          </Button>
           <Button
             type="button"
             variant="outline"
@@ -1053,10 +882,7 @@ function Dashboard({ profile, userId, onSignOut }: {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setCameraMode("foto")
-                    void startCamera()
-                  }}
+                  onClick={() => void startCamera()}
                   className="h-12 rounded-md border-2 flex items-center justify-center px-3 cursor-pointer text-sm font-semibold transition-all active:scale-[0.99]"
                   style={{
                     fontFamily: "var(--bt-font-display)",
@@ -1558,62 +1384,7 @@ function Dashboard({ profile, userId, onSignOut }: {
         </section>
       </main>
 
-      {cameraOpen && cameraMode === "scan" && (
-        <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#000" }}>
-          <div className="shrink-0 flex flex-col gap-0.5 px-4 py-2" style={{ background: "#1E1E1E" }}>
-            <span
-              className="text-sm font-bold uppercase tracking-wider text-white"
-              style={{ fontFamily: "var(--bt-font-display)" }}
-            >
-              {scanStatus === "membaca"
-                ? "Membaca..."
-                : scanStatus === "coba"
-                  ? "Belum terbaca — dekatkan & terangi plat"
-                  : "Arahkan ke plat..."}
-            </span>
-            {lastOcrDebug && (
-              <span className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
-                Terbaca: {lastOcrDebug}
-              </span>
-            )}
-            {debugThumb && (
-              <img
-                src={debugThumb}
-                alt="Area yang dibaca OCR"
-                className="h-16 w-auto rounded border object-contain self-start"
-                style={{ borderColor: "rgba(255,255,255,0.3)", background: "#000" }}
-              />
-            )}
-          </div>
-          <div className="relative flex-1">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full bg-black object-cover"
-            />
-            <div
-              className="pointer-events-none absolute left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[28%] rounded-lg border-2"
-              style={{ borderColor: "var(--bt-led)", top: "38%" }}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={stopCamera}
-            className="h-14 shrink-0 text-sm font-semibold"
-            style={{
-              fontFamily: "var(--bt-font-display)",
-              background: "#2a2a2a",
-              color: "rgba(255,255,255,0.75)",
-            }}
-          >
-            Batal
-          </button>
-        </div>
-      )}
-
-      {cameraOpen && cameraMode === "foto" && (
+      {cameraOpen && (
         <div
           className="fixed inset-0 z-50 flex flex-col items-center justify-end sm:justify-center p-4"
           style={{ background: "rgba(0,0,0,0.85)" }}

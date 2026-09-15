@@ -623,7 +623,20 @@ function Dashboard({ profile, userId, onSignOut }: {
 
     if (error) {
       if (error.message.includes("PERTALITE_JEDA_48JAM")) {
-        toast.error("Pertalite untuk plat ini baru bisa diisi lagi setelah 48 jam dari isi terakhir.")
+        const { data: lastPertalite } = await supabase
+          .from("transaksi")
+          .select("created_at")
+          .eq("kendaraan_id", kendaraanId)
+          .eq("produk", "Pertalite")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        const blockedAt = pertaliteBlockedUntil((lastPertalite as { created_at: string } | null)?.created_at ?? null)
+        toast.error(
+          blockedAt
+            ? `Pertalite plat ini baru bisa diisi lagi ${formatWaktuID(blockedAt)} (jeda 48 jam).`
+            : "Pertalite untuk plat ini baru bisa diisi lagi setelah 48 jam dari isi terakhir.",
+        )
       } else if (error.message.includes("chk_pertalite_max_liter")) {
         toast.error("Pertalite maksimal 30 liter per pengisian.")
       } else {
@@ -1143,6 +1156,10 @@ function Dashboard({ profile, userId, onSignOut }: {
                 </select>
               </div>
             </div>
+
+            <p className="text-[11px] text-center leading-snug" style={{ color: "rgba(255,255,255,0.45)" }}>
+              Aturan: Pertalite maks 30 L per isi &amp; jeda 48 jam per plat. Pertamax tanpa batas.
+            </p>
 
             {!produkStokAda(produk) ? (
               <p className="text-xs text-center" style={{ color: "var(--bt-merah-muda)" }}>

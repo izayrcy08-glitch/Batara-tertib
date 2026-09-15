@@ -40,10 +40,23 @@ type ResultSummary = {
   lastText: string
   lastTone: "ok" | "warn"
   spbuNama: string
+  lastPertaliteAt: string | null
+}
+
+const PERTALITE_JEDA_MS = 48 * 60 * 60 * 1000
+
+function pertaliteBlockedUntil(lastPertaliteAt: string | null): Date | null {
+  if (!lastPertaliteAt) return null
+  const until = new Date(lastPertaliteAt).getTime() + PERTALITE_JEDA_MS
+  return until > Date.now() ? new Date(until) : null
 }
 
 function wibDateKey(iso: string): string {
   return new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" })
+}
+
+function formatWaktuID(d: Date): string {
+  return d.toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
 }
 
 function namaRelasiSpbu(rel: { nama?: string } | { nama?: string }[] | null | undefined): string {
@@ -422,7 +435,7 @@ function Dashboard({ profile, userId, onSignOut }: {
   async function hydrateResultSummary(list: Kendaraan[]): Promise<Record<string, ResultSummary>> {
     const summaries = await Promise.all(
       list.map(async (k) => {
-        const [trxRes, tolakRes] = await Promise.all([
+        const [trxRes, tolakRes, pertaliteRes] = await Promise.all([
           supabase
             .from("transaksi")
             .select("created_at, liter, produk, spbu:spbu_id(nama)")
@@ -437,6 +450,14 @@ function Dashboard({ profile, userId, onSignOut }: {
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle(),
+          supabase
+            .from("transaksi")
+            .select("created_at")
+            .eq("kendaraan_id", k.id)
+            .eq("produk", "Pertalite")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
         ])
 
         const trx = trxRes.data as
@@ -445,6 +466,7 @@ function Dashboard({ profile, userId, onSignOut }: {
         const tol = tolakRes.data as
           | { created_at: string; alasan: string; catatan: string | null; spbu?: { nama?: string } | { nama?: string }[] | null }
           | null
+        const lastPertaliteAt = (pertaliteRes.data as { created_at: string } | null)?.created_at ?? null
         const lastIsTolak = !!tol && (!trx || new Date(tol.created_at).getTime() > new Date(trx.created_at).getTime())
         const lastTime = lastIsTolak ? tol?.created_at : trx?.created_at
         const spbuNama = lastIsTolak ? namaRelasiSpbu(tol?.spbu) : namaRelasiSpbu(trx?.spbu)
@@ -472,6 +494,7 @@ function Dashboard({ profile, userId, onSignOut }: {
           lastText,
           lastTone: alreadyFilledToday ? "warn" : "ok",
           spbuNama,
+          lastPertaliteAt,
         }
 
         return [k.id, summary] as const
@@ -576,6 +599,17 @@ function Dashboard({ profile, userId, onSignOut }: {
       toast.error("Stok Pertamax kosong. Ubah stok di strip atas jika sudah ada.")
       return
     }
+    if (produk === "Pertalite" && literNum > 30) {
+      toast.error("Pertalite maksimal 30 liter per pengisian.")
+      return
+    }
+    if (produk === "Pertalite") {
+      const blockedAt = pertaliteBlockedUntil(resultSummary[kendaraanId]?.lastPertaliteAt ?? null)
+      if (blockedAt) {
+        toast.error(`Pertalite plat ini baru bisa diisi lagi ${formatWaktuID(blockedAt)} (jeda 48 jam).`)
+        return
+      }
+    }
 
     setIsiLoading(true)
     const { error } = await supabase.from("transaksi").insert({
@@ -588,8 +622,10 @@ function Dashboard({ profile, userId, onSignOut }: {
     setIsiLoading(false)
 
     if (error) {
-      if (error.message.includes("idx_satu_isi_per_hari")) {
-        toast.error("Sudah isi hari ini! 1 plat = 1 isi per hari.")
+      if (error.message.includes("PERTALITE_JEDA_48JAM")) {
+        toast.error("Pertalite untuk plat ini baru bisa diisi lagi setelah 48 jam dari isi terakhir.")
+      } else if (error.message.includes("chk_pertalite_max_liter")) {
+        toast.error("Pertalite maksimal 30 liter per pengisian.")
       } else {
         toast.error("Gagal menyimpan. Coba lagi.")
       }
@@ -1032,7 +1068,10 @@ function Dashboard({ profile, userId, onSignOut }: {
         )}
 
         {/* Form ISI / TOLAK — muncul setelah plat dipilih */}
-        {selected && showAksiPanel && (
+        {selected && showAksiPanel && (() => {
+          const pertaliteBlockedAt = pertaliteBlockedUntil(resultSummary[selected.id]?.lastPertaliteAt ?? null)
+          const pertaliteBlocked = produk === "Pertalite" && pertaliteBlockedAt !== null
+          return (
           <section className="flex flex-col gap-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
@@ -1047,13 +1086,12 @@ function Dashboard({ profile, userId, onSignOut }: {
                   id="liter"
                   type="number"
                   min={1}
+                  max={produk === "Pertalite" ? 30 : undefined}
                   step={1}
                   inputMode="numeric"
                   placeholder="20"
                   value={liter}
-                  disabled={
-                    resultSummary[selected.id]?.statusTone === "warn" || !produkStokAda(produk)
-                  }
+                  disabled={pertaliteBlocked || !produkStokAda(produk)}
                   onChange={(e) => setLiter(e.target.value.replace(/[^\d]/g, ""))}
                   className="h-14 text-2xl tracking-widest text-center bg-transparent border-2 placeholder:opacity-30 disabled:opacity-40"
                   style={{
@@ -1075,7 +1113,6 @@ function Dashboard({ profile, userId, onSignOut }: {
                 <select
                   id="produk"
                   value={produk}
-                  disabled={resultSummary[selected.id]?.statusTone === "warn"}
                   onChange={(e) => setProduk(e.target.value)}
                   className="h-14 px-3 rounded-md border-2 bg-transparent text-base disabled:opacity-40"
                   style={{
@@ -1086,6 +1123,12 @@ function Dashboard({ profile, userId, onSignOut }: {
                 >
                   {PRODUK_BBM.map((p) => {
                     const kosong = !produkStokAda(p)
+                    const jedaAktif = p === "Pertalite" && pertaliteBlockedAt !== null
+                    const label = kosong
+                      ? `${p} (kosong)`
+                      : jedaAktif
+                        ? `${p} (isi lagi ${formatWaktuID(pertaliteBlockedAt)})`
+                        : p
                     return (
                       <option
                         key={p}
@@ -1093,7 +1136,7 @@ function Dashboard({ profile, userId, onSignOut }: {
                         disabled={kosong}
                         style={{ color: "#111", background: "#fff" }}
                       >
-                        {kosong ? `${p} (kosong)` : p}
+                        {label}
                       </option>
                     )
                   })}
@@ -1107,14 +1150,16 @@ function Dashboard({ profile, userId, onSignOut }: {
               </p>
             ) : null}
 
+            {pertaliteBlocked && pertaliteBlockedAt ? (
+              <p className="text-xs text-center" style={{ color: "var(--bt-merah-muda)" }}>
+                Pertalite plat ini baru bisa diisi lagi {formatWaktuID(pertaliteBlockedAt)} (jeda 48 jam).
+              </p>
+            ) : null}
+
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => handleIsi(selected.id)}
-                disabled={
-                  isiLoading
-                  || resultSummary[selected.id]?.statusTone === "warn"
-                  || !produkStokAda(produk)
-                }
+                disabled={isiLoading || pertaliteBlocked || !produkStokAda(produk)}
                 className="relative h-20 rounded-2xl text-white font-black text-2xl uppercase tracking-wider flex items-center justify-center gap-3 transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
                 style={{
                   fontFamily: "var(--bt-font-display)",
@@ -1140,7 +1185,8 @@ function Dashboard({ profile, userId, onSignOut }: {
               </button>
             </div>
           </section>
-        )}
+          )
+        })()}
 
         {tolakOpen && selected && (
           <div

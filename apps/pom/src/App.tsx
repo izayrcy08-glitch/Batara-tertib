@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react"
-import { Fuel, ShieldX, LogOut, Search, Loader2, Plus, MessageSquareWarning } from "lucide-react"
+import { Fuel, ShieldX, LogOut, Search, Loader2, Plus, MessageSquareWarning, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@batara/ui/components/ui/button"
 import { Input } from "@batara/ui/components/ui/input"
 import { Label } from "@batara/ui/components/ui/label"
@@ -1375,12 +1375,25 @@ function Dashboard({ profile, userId, onSignOut }: {
 
         {/* Riwayat SPBU hari ini */}
         <section className="flex flex-col gap-2.5">
-          <h2
-            className="text-xs font-semibold uppercase tracking-wider"
-            style={{ fontFamily: "var(--bt-font-display)", color: "var(--bt-led)", opacity: 0.6 }}
-          >
-            Riwayat SPBU hari ini
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2
+              className="text-xs font-semibold uppercase tracking-wider"
+              style={{ fontFamily: "var(--bt-font-display)", color: "var(--bt-led)", opacity: 0.6 }}
+            >
+              Riwayat SPBU hari ini
+            </h2>
+            {riwayatSpbuExpanded && riwayatSpbuHariIni.length > 10 && (
+              <button
+                type="button"
+                onClick={() => setRiwayatSpbuExpanded(false)}
+                className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider"
+                style={{ fontFamily: "var(--bt-font-display)", color: "var(--bt-led)" }}
+              >
+                <ChevronUp className="size-3.5" />
+                Ciutkan
+              </button>
+            )}
+          </div>
           {riwayatSpbuLoading ? (
             <div className="flex justify-center py-4">
               <Loader2 className="size-5 animate-spin" style={{ color: "var(--bt-led)" }} />
@@ -1391,6 +1404,7 @@ function Dashboard({ profile, userId, onSignOut }: {
             </p>
           ) : (
             <>
+              <div className={`flex flex-col gap-2.5${riwayatSpbuHariIni.length > 10 ? " pb-14" : ""}`}>
               {(riwayatSpbuExpanded ? riwayatSpbuHariIni : riwayatSpbuHariIni.slice(0, 10)).map((r) => (
                 <Card key={r.id} className="border-0 shadow-none rounded-lg" style={{ background: "#242424" }}>
                   <CardContent className="flex items-center justify-between px-4 py-3">
@@ -1431,14 +1445,16 @@ function Dashboard({ profile, userId, onSignOut }: {
                   </CardContent>
                 </Card>
               ))}
+              </div>
               {riwayatSpbuHariIni.length > 10 && (
                 <Button
                   type="button"
                   onClick={() => setRiwayatSpbuExpanded((v) => !v)}
                   variant="secondary"
-                  className="h-10 text-xs uppercase tracking-wider"
+                  className="sticky bottom-2 w-full h-11 text-xs uppercase tracking-wider gap-1.5 shadow-lg"
                   style={{ fontFamily: "var(--bt-font-display)" }}
                 >
+                  {riwayatSpbuExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
                   {riwayatSpbuExpanded ? "Lihat lebih sedikit" : "Lihat lebih banyak"}
                 </Button>
               )}
@@ -1496,7 +1512,7 @@ function Dashboard({ profile, userId, onSignOut }: {
       )}
 
       <footer className="px-4 py-2 text-center text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
-        Batara Tertib v1 · Muara Teweh
+        Ada masalah pada aplikasi atau perlu fitur tambahan? Hubungi developer: 082251869325
       </footer>
     </div>
   )

@@ -129,7 +129,7 @@ export function Login({ onLogin }: Props) {
           className="text-center text-xs"
           style={{ color: "rgba(255,255,255,0.25)" }}
         >
-          Batara Tertib v1 · Muara Teweh
+          Ada masalah pada aplikasi atau perlu fitur tambahan? Hubungi developer: 082251869325
         </p>
       </div>
     </div>

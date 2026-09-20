@@ -251,12 +251,14 @@ function Dashboard({ profile, userId, onSignOut }: {
         .select("id, liter, produk, created_at, kendaraan:kendaraan_id(plat_lengkap), spbu:spbu_id(nama)")
         .eq("spbu_id", spbuId)
         .gte("created_at", dayStartApprox)
+        .order("created_at", { ascending: false })
         .limit(80),
       supabase
         .from("tolakan")
         .select("id, alasan, catatan, created_at, kendaraan:kendaraan_id(plat_lengkap), spbu:spbu_id(nama)")
         .eq("spbu_id", spbuId)
         .gte("created_at", dayStartApprox)
+        .order("created_at", { ascending: false })
         .limit(80),
     ])
 

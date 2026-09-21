@@ -43,20 +43,23 @@ type ResultSummary = {
   lastPertaliteAt: string | null
 }
 
-const PERTALITE_JEDA_MS = 48 * 60 * 60 * 1000
-
-function pertaliteBlockedUntil(lastPertaliteAt: string | null): Date | null {
-  if (!lastPertaliteAt) return null
-  const until = new Date(lastPertaliteAt).getTime() + PERTALITE_JEDA_MS
-  return until > Date.now() ? new Date(until) : null
-}
+const PERTALITE_JEDA_HARI = 2
 
 function wibDateKey(iso: string): string {
   return new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" })
 }
 
+// Jeda Pertalite dihitung per tanggal kalender WIB, bukan durasi jam:
+// isi tanggal D (jam berapa pun) -> boleh isi lagi mulai tanggal D+2, jam 00:00 WIB.
+function pertaliteBlockedUntil(lastPertaliteAt: string | null): Date | null {
+  if (!lastPertaliteAt) return null
+  const [y, m, d] = wibDateKey(lastPertaliteAt).split("-").map(Number)
+  const until = Date.UTC(y, m - 1, d + PERTALITE_JEDA_HARI, 0, 0, 0) - 7 * 60 * 60 * 1000
+  return until > Date.now() ? new Date(until) : null
+}
+
 function formatWaktuID(d: Date): string {
-  return d.toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+  return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", timeZone: "Asia/Jakarta" })
 }
 
 function namaRelasiSpbu(rel: { nama?: string } | { nama?: string }[] | null | undefined): string {
@@ -161,7 +164,6 @@ function Dashboard({ profile, userId, onSignOut }: {
   const [riwayatSpbuLoading, setRiwayatSpbuLoading] = useState(false)
   const [riwayatSpbuExpanded, setRiwayatSpbuExpanded] = useState(false)
   const [spbuNama, setSpbuNama] = useState("")
-  const [liter, setLiter] = useState("")
   const [produk, setProduk] = useState("Pertalite")
   const [isiLoading, setIsiLoading] = useState(false)
   const [tolakOpen, setTolakOpen] = useState(false)
@@ -463,7 +465,7 @@ function Dashboard({ profile, userId, onSignOut }: {
         ])
 
         const trx = trxRes.data as
-          | { created_at: string; liter: number; produk: string; spbu?: { nama?: string } | { nama?: string }[] | null }
+          | { created_at: string; liter: number | null; produk: string; spbu?: { nama?: string } | { nama?: string }[] | null }
           | null
         const tol = tolakRes.data as
           | { created_at: string; alasan: string; catatan: string | null; spbu?: { nama?: string } | { nama?: string }[] | null }
@@ -485,9 +487,10 @@ function Dashboard({ profile, userId, onSignOut }: {
             day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
           })
           const spbuSuffix = spbuNama ? ` · ${spbuNama}` : ""
+          const jumlahLiter = trx.liter != null ? `${trx.liter} L ` : ""
           lastText = alreadyFilledToday
-            ? `${trx.liter} L ${trx.produk} · ${waktu}${spbuSuffix}`
-            : `Terakhir isi ${trx.liter} L ${trx.produk} · ${waktu}${spbuSuffix}`
+            ? `${jumlahLiter}${trx.produk} · ${waktu}${spbuSuffix}`
+            : `Terakhir isi ${jumlahLiter}${trx.produk} · ${waktu}${spbuSuffix}`
         }
 
         const summary: ResultSummary = {
@@ -572,7 +575,6 @@ function Dashboard({ profile, userId, onSignOut }: {
   async function handleSelect(k: Kendaraan, summaryOverride?: ResultSummary) {
     setSelected(k)
     setShowAksiPanel(true)
-    setLiter("")
     setRiwayat7Open(false)
     const summary = summaryOverride ?? resultSummary[k.id]
     if (summary?.statusTone === "warn") {
@@ -583,12 +585,13 @@ function Dashboard({ profile, userId, onSignOut }: {
     }
   }
 
+  function resetPencarian() {
+    setQuery("")
+    setSelected(null)
+    setResults([])
+  }
+
   async function handleIsi(kendaraanId: string) {
-    const literNum = parseInt(liter, 10)
-    if (!liter || Number.isNaN(literNum) || literNum <= 0) {
-      toast.error("Isi liter dulu. Harus angka lebih dari 0")
-      return
-    }
     if (!PRODUK_BBM.includes(produk as (typeof PRODUK_BBM)[number])) {
       toast.error("Pilih produk BBM")
       return
@@ -601,14 +604,10 @@ function Dashboard({ profile, userId, onSignOut }: {
       toast.error("Stok Pertamax kosong. Ubah stok di strip atas jika sudah ada.")
       return
     }
-    if (produk === "Pertalite" && literNum > 30) {
-      toast.error("Pertalite maksimal 30 liter per pengisian.")
-      return
-    }
     if (produk === "Pertalite") {
       const blockedAt = pertaliteBlockedUntil(resultSummary[kendaraanId]?.lastPertaliteAt ?? null)
       if (blockedAt) {
-        toast.error(`Pertalite plat ini baru bisa diisi lagi ${formatWaktuID(blockedAt)} (jeda 48 jam).`)
+        toast.error(`Pertalite plat ini baru bisa diisi lagi ${formatWaktuID(blockedAt)} (jeda 2 hari).`)
         return
       }
     }
@@ -618,13 +617,13 @@ function Dashboard({ profile, userId, onSignOut }: {
       kendaraan_id: kendaraanId,
       spbu_id: profile.spbu_id,
       user_id: userId,
-      liter: literNum,
+      liter: null,
       produk,
     })
     setIsiLoading(false)
 
     if (error) {
-      if (error.message.includes("PERTALITE_JEDA_48JAM")) {
+      if (error.message.includes("PERTALITE_JEDA_2HARI")) {
         const { data: lastPertalite } = await supabase
           .from("transaksi")
           .select("created_at")
@@ -636,23 +635,17 @@ function Dashboard({ profile, userId, onSignOut }: {
         const blockedAt = pertaliteBlockedUntil((lastPertalite as { created_at: string } | null)?.created_at ?? null)
         toast.error(
           blockedAt
-            ? `Pertalite plat ini baru bisa diisi lagi ${formatWaktuID(blockedAt)} (jeda 48 jam).`
-            : "Pertalite untuk plat ini baru bisa diisi lagi setelah 48 jam dari isi terakhir.",
+            ? `Pertalite plat ini baru bisa diisi lagi ${formatWaktuID(blockedAt)} (jeda 2 hari).`
+            : "Pertalite untuk plat ini baru bisa diisi lagi 2 hari kalender setelah isi terakhir.",
         )
-      } else if (error.message.includes("chk_pertalite_max_liter")) {
-        toast.error("Pertalite maksimal 30 liter per pengisian.")
       } else {
         toast.error("Gagal menyimpan. Coba lagi.")
       }
     } else {
-      toast.success(`ISI ${literNum} L ${produk} berhasil`)
-      setLiter("")
+      toast.success(`ISI ${produk} berhasil`)
       if (profile.spbu_id) await loadRiwayatSpbuHariIni(profile.spbu_id)
-      if (selected) {
-        await loadRiwayat(selected)
-        await hydrateResultSummary([selected])
-      }
       setShowAksiPanel(false)
+      resetPencarian()
     }
   }
 
@@ -676,14 +669,11 @@ function Dashboard({ profile, userId, onSignOut }: {
     } else {
       toast.success("Tolakan dicatat")
       if (profile.spbu_id) await loadRiwayatSpbuHariIni(profile.spbu_id)
-      if (selected) {
-        await loadRiwayat(selected)
-        await hydrateResultSummary([selected])
-      }
       setShowAksiPanel(false)
       setTolakOpen(false)
       setShowManualAlasan(false)
       setManualAlasan("")
+      resetPencarian()
     }
   }
 
@@ -1088,79 +1078,49 @@ function Dashboard({ profile, userId, onSignOut }: {
           const pertaliteBlocked = produk === "Pertalite" && pertaliteBlockedAt !== null
           return (
           <section className="flex flex-col gap-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="liter"
-                  className="text-xs uppercase tracking-wider"
-                  style={{ fontFamily: "var(--bt-font-display)", color: "var(--bt-led)", opacity: 0.7 }}
-                >
-                  Liter
-                </Label>
-                <Input
-                  id="liter"
-                  type="number"
-                  min={1}
-                  max={produk === "Pertalite" ? 30 : undefined}
-                  step={1}
-                  inputMode="numeric"
-                  placeholder="20"
-                  value={liter}
-                  disabled={pertaliteBlocked || !produkStokAda(produk)}
-                  onChange={(e) => setLiter(e.target.value.replace(/[^\d]/g, ""))}
-                  className="h-14 text-2xl tracking-widest text-center bg-transparent border-2 placeholder:opacity-30 disabled:opacity-40"
-                  style={{
-                    fontFamily: "var(--bt-font-display)",
-                    fontVariantNumeric: "tabular-nums",
-                    borderColor: "color-mix(in srgb, var(--bt-led) 40%, transparent)",
-                    color: "var(--bt-led)",
-                  }}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="produk"
-                  className="text-xs uppercase tracking-wider"
-                  style={{ fontFamily: "var(--bt-font-display)", color: "var(--bt-led)", opacity: 0.7 }}
-                >
-                  Produk BBM
-                </Label>
-                <select
-                  id="produk"
-                  value={produk}
-                  onChange={(e) => setProduk(e.target.value)}
-                  className="h-14 px-3 rounded-md border-2 bg-transparent text-base disabled:opacity-40"
-                  style={{
-                    fontFamily: "var(--bt-font-display)",
-                    borderColor: "color-mix(in srgb, var(--bt-led) 40%, transparent)",
-                    color: "var(--bt-led)",
-                  }}
-                >
-                  {PRODUK_BBM.map((p) => {
-                    const kosong = !produkStokAda(p)
-                    const jedaAktif = p === "Pertalite" && pertaliteBlockedAt !== null
-                    const label = kosong
-                      ? `${p} (kosong)`
-                      : jedaAktif
-                        ? `${p} (isi lagi ${formatWaktuID(pertaliteBlockedAt)})`
-                        : p
-                    return (
-                      <option
-                        key={p}
-                        value={p}
-                        disabled={kosong}
-                        style={{ color: "#111", background: "#fff" }}
-                      >
-                        {label}
-                      </option>
-                    )
-                  })}
-                </select>
-              </div>
+            <div className="flex flex-col gap-1.5">
+              <Label
+                htmlFor="produk"
+                className="text-xs uppercase tracking-wider"
+                style={{ fontFamily: "var(--bt-font-display)", color: "var(--bt-led)", opacity: 0.7 }}
+              >
+                Produk BBM
+              </Label>
+              <select
+                id="produk"
+                value={produk}
+                onChange={(e) => setProduk(e.target.value)}
+                className="h-14 px-3 rounded-md border-2 bg-transparent text-base disabled:opacity-40"
+                style={{
+                  fontFamily: "var(--bt-font-display)",
+                  borderColor: "color-mix(in srgb, var(--bt-led) 40%, transparent)",
+                  color: "var(--bt-led)",
+                }}
+              >
+                {PRODUK_BBM.map((p) => {
+                  const kosong = !produkStokAda(p)
+                  const jedaAktif = p === "Pertalite" && pertaliteBlockedAt !== null
+                  const label = kosong
+                    ? `${p} (kosong)`
+                    : jedaAktif
+                      ? `${p} (isi lagi ${formatWaktuID(pertaliteBlockedAt)})`
+                      : p
+                  return (
+                    <option
+                      key={p}
+                      value={p}
+                      disabled={kosong}
+                      style={{ color: "#111", background: "#fff" }}
+                    >
+                      {label}
+                    </option>
+                  )
+                })}
+              </select>
             </div>
 
             <p className="text-[11px] text-center leading-snug" style={{ color: "rgba(255,255,255,0.45)" }}>
-              Aturan: Pertalite maks 30 L per isi &amp; jeda 48 jam per plat. Pertamax tanpa batas.
+              Aturan: Pertalite jeda 2 hari kalender per plat. Pertamax tanpa batas.
             </p>
 
             {!produkStokAda(produk) ? (
@@ -1171,7 +1131,7 @@ function Dashboard({ profile, userId, onSignOut }: {
 
             {pertaliteBlocked && pertaliteBlockedAt ? (
               <p className="text-xs text-center" style={{ color: "var(--bt-merah-muda)" }}>
-                Pertalite plat ini baru bisa diisi lagi {formatWaktuID(pertaliteBlockedAt)} (jeda 48 jam).
+                Pertalite plat ini baru bisa diisi lagi {formatWaktuID(pertaliteBlockedAt)} (jeda 2 hari).
               </p>
             ) : null}
 
@@ -1348,7 +1308,13 @@ function Dashboard({ profile, userId, onSignOut }: {
                               color: r.jenis === "tolak" ? "#E8384F" : "var(--bt-led)",
                             }}
                           >
-                            {r.jenis === "tolak" ? (r.catatan ? `TOLAK · ${r.catatan}` : "TOLAK") : `${r.liter} L`}
+                            {r.jenis === "tolak"
+                              ? r.catatan
+                                ? `TOLAK · ${r.catatan}`
+                                : "TOLAK"
+                              : r.liter != null
+                                ? `${r.liter} L`
+                                : "ISI"}
                           </p>
                           <span
                             className="text-[10px] font-medium px-2 py-0.5 rounded"
@@ -1426,7 +1392,7 @@ function Dashboard({ profile, userId, onSignOut }: {
                         className="text-sm font-bold"
                         style={{ fontFamily: "var(--bt-font-display)", color: r.jenis === "tolak" ? "#E8384F" : "var(--bt-led)" }}
                       >
-                        {r.jenis === "tolak" ? "TOLAK" : `${r.liter} L`}
+                        {r.jenis === "tolak" ? "TOLAK" : r.liter != null ? `${r.liter} L` : "ISI"}
                       </p>
                       <span
                         className="text-[10px] font-medium px-2 py-0.5 rounded"

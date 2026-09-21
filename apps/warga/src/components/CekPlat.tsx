@@ -191,7 +191,7 @@ export function CekPlat() {
                       fontVariantNumeric: "tabular-nums",
                     }}
                   >
-                    {r.jenis === "tolak" ? "TOLAK" : `${r.liter} L`}
+                    {r.jenis === "tolak" ? "TOLAK" : r.liter != null ? `${r.liter} L` : "ISI"}
                   </p>
                   <span
                     className="text-[10px] font-medium px-2 py-0.5 rounded"

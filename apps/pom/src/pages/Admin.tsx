@@ -724,7 +724,7 @@ function TabRiwayat({ spbu }: { spbu: Spbu[] }) {
           <StrukCard key={`${r.sumber}-${r.id}`}>
             <p className="font-bold tracking-wider" style={{ fontFamily: "var(--bt-font-display)", fontVariantNumeric: "tabular-nums" }}>{r.plat}</p>
             <p className="text-sm font-semibold mt-0.5" style={{ color: r.sumber === "tolakan" ? "var(--bt-merah)" : "var(--bt-hijau)", fontFamily: "var(--bt-font-display)" }}>
-              {r.sumber === "tolakan" ? `TOLAK · ${r.catatan ?? ""}` : `${r.liter} L ${r.produk}`}
+              {r.sumber === "tolakan" ? `TOLAK · ${r.catatan ?? ""}` : `${r.liter != null ? `${r.liter} L ` : ""}${r.produk}`}
             </p>
             <p className="text-xs mt-0.5" style={{ color: "color-mix(in srgb, var(--bt-tinta) 50%, transparent)" }}>
               {new Date(r.created_at).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}

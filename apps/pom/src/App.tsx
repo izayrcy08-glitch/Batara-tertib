@@ -797,7 +797,7 @@ function Dashboard({ profile, userId, onSignOut }: {
             Online
           </span>
           <button
-            onClick={onSignOut}
+            onClick={() => confirm("Keluar dari akun?") && onSignOut()}
             className="p-2 rounded-lg transition-colors"
             style={{ color: "rgba(255,255,255,0.6)" }}
             title="Keluar"

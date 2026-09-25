@@ -94,7 +94,7 @@ export function useAuth() {
 
   async function signOut() {
     if (!supabase) return
-    await supabase.auth.signOut()
+    await supabase.auth.signOut({ scope: "local" })
   }
 
   return { session, profile, loading, signIn, signOut }

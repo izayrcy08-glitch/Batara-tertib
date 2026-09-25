@@ -78,7 +78,7 @@ export function AdminPanel({ profile, onSignOut }: { profile: { nama: string }; 
             </h1>
             <p className="text-xs text-white/70">Admin · {profile.nama}</p>
           </div>
-          <button type="button" onClick={onSignOut} className="p-2 rounded-lg" style={{ color: "rgba(255,255,255,0.7)" }} title="Keluar">
+          <button type="button" onClick={() => confirm("Keluar dari akun?") && onSignOut()} className="p-2 rounded-lg" style={{ color: "rgba(255,255,255,0.7)" }} title="Keluar">
             <LogOut className="size-4" />
           </button>
         </div>

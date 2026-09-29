@@ -112,3 +112,9 @@ V1 inti selesai (`525adbc` di `origin/master`). Slice V2 warga selesai: WebP, ad
 **Koreksi SPBU (2026-08-31):** LANJAS → `SPBU KM 02 JL BRIGJEN KATAMSO` — jalankan `supabase/migrations/20260831_fix_spbu_katamso.sql` di Dashboard.
 
 **Beranda feed aduan (2026-08-30):** Section daftar SPBU di beranda diganti feed aduan publik 7 hari + hak jawab SPBU (bukan komentar warga). RPC `daftar_aduan_publik` — jalankan `supabase/migrations/20260830_daftar_aduan_publik.sql` di Dashboard. Stok tetap di halaman `/spbu/[slug]`.
+
+**Keepalive Supabase (free tier pause setelah 7 hari tanpa aktivitas)** — diatur di
+cron-job.org, di luar repo (diputuskan 2026-09-29). Job: `GET <PUBLIC_SUPABASE_URL>/rest/v1/spbu?select=id&limit=1`
+dengan header `apikey: <anon key>`, setiap hari 03.00 WIB, notifikasi email kalau gagal. Hanya baca
+tabel `spbu` (publik via RLS). **Kalau anon key di-rotate, update header job di cron-job.org.**
+Kalau nanti pindah ke Supabase Pro, job ini boleh dihapus.
